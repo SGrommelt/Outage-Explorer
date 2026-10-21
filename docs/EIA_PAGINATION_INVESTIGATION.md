@@ -1,6 +1,6 @@
-# EIA facility pagination investigation — conclusion
+# EIA facility pagination investigation
 
-Investigated on 2026-10-21 for **2026-10-20 only**. Live requests have stopped. No extraction acceptance rule or atomic publication code was changed.
+Initial investigation on 2026-10-21 covered **2026-10-20 only**. A bounded follow-up on the same day covered **2026-10-18–19**; its evidence and current conclusion are below. Requests are now stopped. No extraction acceptance rule or publication/recovery code was changed.
 
 ## Verified result
 
@@ -70,7 +70,7 @@ The complete 95-row generator control spans **55 distinct facilities**, exactly 
 
 **Unresolved:** whether the 55 facility rows constitute the complete authoritative source dataset, why EIA's total differs, whether other dates have the same behavior, and whether revisions affect results. These observations do not justify accepting a smaller count, inventing 40 rows, or treating this as a resolved source-data issue.
 
-Connection reliability is a separate unresolved limitation. HTTPX attempts and some standard-library requests timed out while other requests succeeded. An isolated authenticated metadata trace returned 200 promptly after TCP/TLS setup. The completed independent comparison ledger records 28 initial requests plus 15 targeted follow-up attempts, including nine timeouts. A separate two-request independent confirmation supplies the regression fixture. Earlier HTTPX diagnostics also experienced timeouts; an interrupted attempt has no complete final ledger. No timeout was counted as an empty page or as evidence of completeness. Requests were capped per diagnostic run and fixed to this one day; no historical dataset was downloaded. No further live checks are required for this conclusion.
+Connection reliability is a separate unresolved limitation. HTTPX attempts and some standard-library requests timed out while other requests succeeded. An isolated authenticated metadata trace returned 200 promptly after TCP/TLS setup. The completed independent comparison ledger records 28 initial requests plus 15 targeted follow-up attempts, including nine timeouts. A separate two-request independent confirmation supplies the regression fixture. Earlier HTTPX diagnostics also experienced timeouts; an interrupted attempt has no complete final ledger. No timeout was counted as an empty page or as evidence of completeness. Requests were capped per diagnostic run and fixed to this one day; no historical dataset was downloaded. No further live checks were required for that initial conclusion; the explicitly requested follow-up below tests the remaining multi-date/count-grain hypothesis.
 
 ## Safety and regression
 
@@ -85,3 +85,61 @@ apps/backend/.venv/bin/python -m pytest apps/backend/tests
 ```
 
 The strict implementation and regression are suitable to commit after offline checks pass. Publication of the affected real three-route snapshot remains blocked until the discrepancy or an independently verified completeness policy is resolved. No commit has been created.
+
+
+## Targeted follow-up: October 18–19, 2026
+
+### Scope and retained evidence
+
+The [follow-up recording](evidence/eia-pagination-2026-10-18_19.json) retains credential-free parameters, exact response bodies, API versions, and computed comparisons. Its UTC timestamp is recorded in `recorded_at_utc`. Unlike a published snapshot, this is diagnostic evidence only. Nothing was written to the extraction or incremental publication roots.
+
+Before networking, the implementation, existing pagination regressions, actual wire schemas, incremental merge/watermark rules, pointer commit/recovery logic, and this document were reviewed. No implementation-side offset, filter, column-selection, or conversion loss was found. In particular, offsets advance by actual received rows and the original count is never replaced with a convenient unique-key count.
+
+A network-sandbox preflight made four connection attempts with **no HTTP responses** (`ConnectError`). After network permission, **exactly nine authenticated EIA requests** completed with HTTP 200, no warnings, and API version `2.1.14`. The run used HTTPX with a fresh connection per request, a 15-second timeout, no retries, and a hard nine-request budget. There were no timeouts in this successful follow-up; earlier intermittent timeouts remain an unresolved operational limitation. No additional EIA requests are needed to reproduce the offline conclusions.
+
+All data queries used `frequency=daily`, `start=2026-10-18`, `end=2026-10-19`, `length=200`, all three explicitly advertised measures (`capacity`, `outage`, `percentOutage`), and ascending `period` followed by route identifiers. Facet probes used the documented `facets[facility][]=...` syntax. Full parameters are in the recording; credentials and request echoes are excluded.
+
+| Request | Route / parameters beyond that baseline | Returned rows | Reported total |
+| --- | --- | --- | --- |
+| 1 | Facility metadata (no data query) | Not applicable | Not applicable |
+| 2 | Facility, offset 0 | 110 | 190 |
+| 3 | Facility, offset 110 | 0 | 190 |
+| 4 | Generator, offset 0 | 190 | 190 |
+| 5 | Generator, offset 190 | 0 | 190 |
+| 6 | National, offset 0 | 2 | 2 |
+| 7 | National, offset 2 | 0 | 2 |
+| 8 | Facility 1715 (one generator per observed day), offset 0 | 2 | 2 |
+| 9 | Facility 3265 (three generators per observed day), offset 0 | 2 | 6 |
+
+The two filtered probes are single bounded requests, not terminal-page enumerations. They establish returned-versus-reported counts for those filters, without claiming a separately complete filtered traversal.
+
+### Verified facts
+
+- Each of October 18 and 19 has **55 unique facility keys, 95 unique generator keys, and one national row**. All returned records pass the existing required-field, date, units, decimal precision, and natural-key validation. Metadata still advertises facility grain, only the `facility` facet, daily frequency, and the same three measures; it does not expose a `generator` dimension on the facility route. The metadata end boundary had advanced to October 21; those later records were not requested.
+- The facility `(period, facility)` key set equals the projection of the complete **190/190 returned generator records**. There are no unmatched keys in either direction. This accounts for all facilities represented by the generator response for these dates; it does **not** prove an independent, authoritative fleet inventory.
+- Every facility's capacity and outage MW exactly equals the Decimal sum of its corresponding generators on the same date. No tolerance or rounding was needed for those measures. Each facility's returned percentage also equals its outage/capacity percentage rounded half-even to two decimal places in this sample. Percentages were not summed.
+- National capacity is `100056.7` MW on each date. National outage is `19113.734` MW on October 18 and `19896.304` MW on October 19. Facility capacity/outage sums match those values exactly on both days. The comparison preserves compatible dates and aggregation levels; it never combines national and lower-grain values into a new total.
+- The terminal facility response is still empty before its advertised total, while generator/national terminal responses agree with their advertised totals. Together with the earlier October 20 evidence, the discrepancy spans **three observed dates**, and a two-day query as well as a one-day query. Nothing here establishes a universal historical pattern.
+- Prior smaller-page, reverse-sort, capacity-only, boundary-offset, and multi-generator-facet controls remain relevant. Explicit projection, documented facet filters, and deterministic sorting do not provide a demonstrated pagination repair.
+
+### Documentation review and hypotheses
+
+The reviewed [EIA API technical guide](https://www.eia.gov/opendata/documentation.php) describes projection through `data[]`, advertised facets, frequency/date filters, sorting, and row-based length/offset. Its pagination section defines `total` as the number of responsive rows, independent of the requested page. It provides **no facility-route exception, count-before-grouping contract, documented grouping/deduplication switch, or alternate authoritative facility count**. The March 2026 patch notes mention an earlier date/count bug; that is not evidence that this separate behavior is intended or corrected.
+
+**Strongly supported hypothesis:** the facility route's count query operates on generator-grain rows before a facility-grain grouping/aggregation. The full-window and one-/three-generator facet controls are consistent with that hypothesis. Matching MW sums show an aggregate relationship in the returned data; neither observation reveals EIA's server query implementation.
+
+**Competing unresolved explanations:** the reported count could describe a broader or differently filtered source population than the returned aggregation; shared omissions or source filters could affect both facility and generator results; or a source/API defect could make counts or coverage unreliable. Cross-route agreement is an internal consistency check on responses that share an upstream source, not independent evidence that an entity was never omitted. National MW equality alone cannot detect every possible omission, such as zero-valued records.
+
+### Resolution decision and exact blocker
+
+**No safe ingestion correction has been established.** The facility response simultaneously advertises 190 responsive rows, supplies 110 unique rows, and returns an empty array at offset 110. The evidence does not authoritatively resolve what the other 80 counted items represent. Treating them as irrelevant generator counts would replace a source contract with our hypothesis. Therefore neither substituting 110 for 190, accepting the first empty/short page, synthesizing extra facility rows, nor deriving replacement facility data from generators is implemented.
+
+Real three-route publication remains **blocked and not yet safe** under the current completeness contract. The new checks establish coherent returned data, not permission to publish it. Existing valid snapshots and watermarks were not touched; no attempt to publish a new real snapshot was made because no correction passed this evidence gate.
+
+The smallest next step is **authoritative clarification from EIA**, using the credential-free request pair at offsets 0/110 plus the facility-3265 2-versus-6 control: does this route intentionally count underlying generator records, and does it guarantee one returned record per `(period, facility)` represented in the generator route? Request a corrected row count or a documented way to obtain it. This does not require another download or broad date sweep. If EIA cannot confirm that contract, obtain an independently authoritative facility inventory for a single affected date before designing a different completeness policy. Confirmation would inform a separately reviewed per-date validation policy; it would not justify a general total override or a fixed 55-facility assumption.
+
+### Offline regression and safety
+
+`apps/backend/tests/test_facility_pagination_evidence.py` recomputes natural-key uniqueness, exact key-set equality, per-facility generator MW sums, national MW sums, percentage rounding, and facet counts directly from the new response bodies. Separate window and incremental replays preserve the original 190 total and empty page at offset 110, and both reject publication despite those cross-route matches. The incremental replay verifies a durable failed audit, fetched row counts of 2/110/190, no published version, and no advanced watermarks. Staging is cleaned in both workflows.
+
+The existing October 20 replays continue to verify byte-for-byte preservation of an existing publication and unchanged watermarks. Existing interruption/recovery, schema, duplicate-key, conflict, and atomic-publication regressions remain unchanged. No production extraction, refresh, pointer, watermark, or crash-recovery code was modified. These tests use recordings and temporary directories only.

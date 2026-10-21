@@ -125,3 +125,14 @@ Remaining limits:
 - Strict null/precision/schema-drift policies can reject legitimate historical variants; review evidence before changing those policies.
 - Publication assumes local POSIX-style atomic rename and directory fsync (tested on macOS). Object storage/network filesystems and Windows are not validated.
 - Uniqueness sets grow with the date window; this local implementation is not intended to hold full-history keys for arbitrarily large runs. This window command has no resume checkpoint or history merge; cumulative merging is available through the separate refresh command. Snapshot garbage collection is not implemented.
+
+
+## Follow-up evidence and current publication blocker
+
+The bounded follow-up in [EIA_PAGINATION_INVESTIGATION.md](EIA_PAGINATION_INVESTIGATION.md#targeted-follow-up-october-1819-2026) used nine successful authenticated requests for October 18–19 and recorded **2/2 national, 110/190 facility, and 190/190 generator rows**. Facility offset 110 was empty with the total still 190. Returned facility keys exactly match generator keys projected to date/facility; facility MW sums reconcile with generators and national totals. A one-generator facility reports 2/2 over two days; a three-generator facility reports 2/6. Full sanitized parameters and responses are in the linked investigation evidence.
+
+These observations strengthen, but do not authoritatively prove, a count-before-facility-aggregation explanation. EIA's reviewed documentation still defines totals in responsive-row terms and supplies no documented facility exception. Matching related responses cannot independently prove source coverage. Consequently **no extraction or incremental acceptance logic was changed**: reported totals remain unchanged, early empty pages still fail, all three routes must validate, publication remains atomic, and failed runs never advance watermarks. No existing published files were overwritten and no real publication was attempted in this follow-up. Diagnostic JSON is evidence, not an accepted snapshot.
+
+Real-data publication is still blocked pending EIA clarification of count/grain semantics or a corrected count/authoritative per-date facility completeness source. See the investigation's exact minimal follow-up; do not run a 30-day extraction or create reports from an unaccepted snapshot. The previous intermittent network timeouts also remain an operational risk, although all nine follow-up requests succeeded without retries.
+
+New offline coverage replays the two-day mismatch through both extraction workflows, verifying that even exact cross-route key and MW agreement cannot silently override pagination totals. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_facility_pagination_evidence.py apps/backend/tests/test_extract_eia.py apps/backend/tests/test_refresh_eia.py`, followed by the full backend suite. No new dependencies or production abstractions were introduced.
