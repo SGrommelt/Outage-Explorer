@@ -16,6 +16,7 @@ dependencies = [
   "pyarrow>=18,<24",
   "pydantic>=2.9,<3",
   "sqlglot>=26,<30",
+  "python-dotenv>=1,<2",
 ]
 
 [project.optional-dependencies]

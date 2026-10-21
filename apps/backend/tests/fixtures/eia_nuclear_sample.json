@@ -1,0 +1,478 @@
+{
+  "base_url": "https://api.eia.gov/v2/nuclear-outages/",
+  "fetched_at_utc": "2026-10-21T06:09:00.480192+00:00",
+  "max_pages_per_route": 2,
+  "page_length": 3,
+  "routes": {
+    "facility-nuclear-outages": {
+      "apiVersion": "2.1.14",
+      "metadata": {
+        "data": {
+          "capacity": {
+            "units": "megawatts"
+          },
+          "outage": {
+            "units": "megawatts"
+          },
+          "percentOutage": {
+            "units": "percent"
+          }
+        },
+        "defaultDateFormat": "YYYY-MM-DD",
+        "defaultFrequency": "daily",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "endPeriod": "2026-10-20",
+        "facets": [
+          {
+            "description": "Plant code",
+            "id": "facility"
+          }
+        ],
+        "frequency": [
+          {
+            "description": "One data point for each day.",
+            "format": "YYYY-MM-DD",
+            "id": "daily",
+            "query": "D"
+          }
+        ],
+        "id": "facility-nuclear-outages",
+        "name": "Facility Level Nuclear Outages",
+        "startPeriod": "2007-01-01"
+      },
+      "pages": [
+        {
+          "apiVersion": "2.1.14",
+          "has_more": true,
+          "query": {
+            "data[0]": "capacity",
+            "data[1]": "outage",
+            "data[2]": "percentOutage",
+            "end": "2026-10-20",
+            "frequency": "daily",
+            "length": 3,
+            "offset": 0,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "sort[1][column]": "facility",
+            "sort[1][direction]": "asc",
+            "start": "2026-10-14"
+          },
+          "response": {
+            "data": [
+              {
+                "capacity": "3755.8",
+                "capacity-units": "megawatts",
+                "facility": "46",
+                "facilityName": "Browns Ferry",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1107.1",
+                "capacity-units": "megawatts",
+                "facility": "204",
+                "facilityName": "Clinton Power Station",
+                "outage": "11.071",
+                "outage-units": "megawatts",
+                "percentOutage": "1",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1255",
+                "capacity-units": "megawatts",
+                "facility": "210",
+                "facilityName": "Wolf Creek Generating Station",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              }
+            ],
+            "dateFormat": "YYYY-MM-DD",
+            "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+            "frequency": "daily",
+            "total": "665"
+          },
+          "returned_rows": 3
+        },
+        {
+          "apiVersion": "2.1.14",
+          "has_more": true,
+          "query": {
+            "data[0]": "capacity",
+            "data[1]": "outage",
+            "data[2]": "percentOutage",
+            "end": "2026-10-20",
+            "frequency": "daily",
+            "length": 3,
+            "offset": 3,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "sort[1][column]": "facility",
+            "sort[1][direction]": "asc",
+            "start": "2026-10-14"
+          },
+          "response": {
+            "data": [
+              {
+                "capacity": "1172",
+                "capacity-units": "megawatts",
+                "facility": "371",
+                "facilityName": "Columbia Generating Station",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "2120.8",
+                "capacity-units": "megawatts",
+                "facility": "566",
+                "facilityName": "Millstone",
+                "outage": "1252.2",
+                "outage-units": "megawatts",
+                "percentOutage": "59.04",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1725",
+                "capacity-units": "megawatts",
+                "facility": "621",
+                "facilityName": "Turkey Point",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              }
+            ],
+            "dateFormat": "YYYY-MM-DD",
+            "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+            "frequency": "daily",
+            "total": "665"
+          },
+          "returned_rows": 3
+        }
+      ]
+    },
+    "generator-nuclear-outages": {
+      "apiVersion": "2.1.14",
+      "metadata": {
+        "data": {
+          "capacity": {
+            "units": "megawatts"
+          },
+          "outage": {
+            "units": "megawatts"
+          },
+          "percentOutage": {
+            "units": "percent"
+          }
+        },
+        "defaultDateFormat": "YYYY-MM-DD",
+        "defaultFrequency": "daily",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "endPeriod": "2026-10-20",
+        "facets": [
+          {
+            "description": "Plant code",
+            "id": "facility"
+          },
+          {
+            "description": "Facility's generator ID number",
+            "id": "generator"
+          }
+        ],
+        "frequency": [
+          {
+            "description": "One data point for each day.",
+            "format": "YYYY-MM-DD",
+            "id": "daily",
+            "query": "D"
+          }
+        ],
+        "id": "generator-nuclear-outages",
+        "name": "Generator Level Nuclear Outages",
+        "startPeriod": "2007-01-01"
+      },
+      "pages": [
+        {
+          "apiVersion": "2.1.14",
+          "has_more": true,
+          "query": {
+            "data[0]": "capacity",
+            "data[1]": "outage",
+            "data[2]": "percentOutage",
+            "end": "2026-10-20",
+            "frequency": "daily",
+            "length": 3,
+            "offset": 0,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "sort[1][column]": "facility",
+            "sort[1][direction]": "asc",
+            "sort[2][column]": "generator",
+            "sort[2][direction]": "asc",
+            "start": "2026-10-14"
+          },
+          "response": {
+            "data": [
+              {
+                "capacity": "1254.8",
+                "capacity-units": "megawatts",
+                "facility": "46",
+                "facilityName": "Browns Ferry",
+                "generator": "1",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1242",
+                "capacity-units": "megawatts",
+                "facility": "46",
+                "facilityName": "Browns Ferry",
+                "generator": "2",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1259",
+                "capacity-units": "megawatts",
+                "facility": "46",
+                "facilityName": "Browns Ferry",
+                "generator": "3",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              }
+            ],
+            "dateFormat": "YYYY-MM-DD",
+            "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+            "frequency": "daily",
+            "total": "665"
+          },
+          "returned_rows": 3
+        },
+        {
+          "apiVersion": "2.1.14",
+          "has_more": true,
+          "query": {
+            "data[0]": "capacity",
+            "data[1]": "outage",
+            "data[2]": "percentOutage",
+            "end": "2026-10-20",
+            "frequency": "daily",
+            "length": 3,
+            "offset": 3,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "sort[1][column]": "facility",
+            "sort[1][direction]": "asc",
+            "sort[2][column]": "generator",
+            "sort[2][direction]": "asc",
+            "start": "2026-10-14"
+          },
+          "response": {
+            "data": [
+              {
+                "capacity": "1107.1",
+                "capacity-units": "megawatts",
+                "facility": "204",
+                "facilityName": "Clinton Power Station",
+                "generator": "1",
+                "outage": "11.071",
+                "outage-units": "megawatts",
+                "percentOutage": "1",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1255",
+                "capacity-units": "megawatts",
+                "facility": "210",
+                "facilityName": "Wolf Creek Generating Station",
+                "generator": "1",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "1172",
+                "capacity-units": "megawatts",
+                "facility": "371",
+                "facilityName": "Columbia Generating Station",
+                "generator": "2",
+                "outage": "0",
+                "outage-units": "megawatts",
+                "percentOutage": "0",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              }
+            ],
+            "dateFormat": "YYYY-MM-DD",
+            "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+            "frequency": "daily",
+            "total": "665"
+          },
+          "returned_rows": 3
+        }
+      ]
+    },
+    "us-nuclear-outages": {
+      "apiVersion": "2.1.14",
+      "metadata": {
+        "data": {
+          "capacity": {
+            "units": "megawatts"
+          },
+          "outage": {
+            "units": "megawatts"
+          },
+          "percentOutage": {
+            "units": "percent"
+          }
+        },
+        "defaultDateFormat": "YYYY-MM-DD",
+        "defaultFrequency": "daily",
+        "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "endPeriod": "2026-10-20",
+        "facets": [],
+        "frequency": [
+          {
+            "description": "One data point for each day.",
+            "format": "YYYY-MM-DD",
+            "id": "daily",
+            "query": "D"
+          }
+        ],
+        "id": "us-nuclear-outages",
+        "name": "U.S. Nuclear Outages",
+        "startPeriod": "2007-01-01"
+      },
+      "pages": [
+        {
+          "apiVersion": "2.1.14",
+          "has_more": true,
+          "query": {
+            "data[0]": "capacity",
+            "data[1]": "outage",
+            "data[2]": "percentOutage",
+            "end": "2026-10-20",
+            "frequency": "daily",
+            "length": 3,
+            "offset": 0,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "start": "2026-10-14"
+          },
+          "response": {
+            "data": [
+              {
+                "capacity": "100056.7",
+                "capacity-units": "megawatts",
+                "outage": "19859.767",
+                "outage-units": "megawatts",
+                "percentOutage": "19.85",
+                "percentOutage-units": "percent",
+                "period": "2026-10-20"
+              },
+              {
+                "capacity": "100056.7",
+                "capacity-units": "megawatts",
+                "outage": "19896.304",
+                "outage-units": "megawatts",
+                "percentOutage": "19.89",
+                "percentOutage-units": "percent",
+                "period": "2026-10-19"
+              },
+              {
+                "capacity": "100056.7",
+                "capacity-units": "megawatts",
+                "outage": "19113.734",
+                "outage-units": "megawatts",
+                "percentOutage": "19.1",
+                "percentOutage-units": "percent",
+                "period": "2026-10-18"
+              }
+            ],
+            "dateFormat": "YYYY-MM-DD",
+            "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+            "frequency": "daily",
+            "total": "7"
+          },
+          "returned_rows": 3
+        },
+        {
+          "apiVersion": "2.1.14",
+          "has_more": true,
+          "query": {
+            "data[0]": "capacity",
+            "data[1]": "outage",
+            "data[2]": "percentOutage",
+            "end": "2026-10-20",
+            "frequency": "daily",
+            "length": 3,
+            "offset": 3,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "start": "2026-10-14"
+          },
+          "response": {
+            "data": [
+              {
+                "capacity": "100056.7",
+                "capacity-units": "megawatts",
+                "outage": "18653.389",
+                "outage-units": "megawatts",
+                "percentOutage": "18.64",
+                "percentOutage-units": "percent",
+                "period": "2026-10-17"
+              },
+              {
+                "capacity": "100056.7",
+                "capacity-units": "megawatts",
+                "outage": "18064.883",
+                "outage-units": "megawatts",
+                "percentOutage": "18.05",
+                "percentOutage-units": "percent",
+                "period": "2026-10-16"
+              },
+              {
+                "capacity": "100056.7",
+                "capacity-units": "megawatts",
+                "outage": "18030.803",
+                "outage-units": "megawatts",
+                "percentOutage": "18.02",
+                "percentOutage-units": "percent",
+                "period": "2026-10-15"
+              }
+            ],
+            "dateFormat": "YYYY-MM-DD",
+            "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+            "frequency": "daily",
+            "total": "7"
+          },
+          "returned_rows": 3
+        }
+      ]
+    }
+  }
+}

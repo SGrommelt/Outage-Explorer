@@ -75,6 +75,26 @@ Use `npm run test:watch --workspace @outage-explorer/frontend` for interactive f
 
 Environment files, local data, build outputs, and dependencies are ignored by Git. Commit `package-lock.json` with dependency changes. Python dependencies use bounded ranges in `pyproject.toml`; there is no Python lockfile yet.
 
+## Manual EIA schema exploration
+
+Configure `EIA_API_KEY` in `apps/backend/.env` or export it in your shell. The exploration tool uses python-dotenv to load that specific file without overriding exported values or interpolating variables. The FastAPI application does not load this key or make EIA requests.
+
+From the repository root, with backend dependencies installed:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.explore_eia --output data/eia-exploration.json
+```
+
+The tool requests metadata and at most two three-row pages for each of the national, facility, and generator routes. It discovers measures and identifier facets from metadata, requests daily observations within seven days of the advertised end date, and sorts by period then identifiers. `--length` accepts 1–10 rows per page; `--timeout` accepts 1–60 seconds per HTTP operation (default 45). There are no automatic retries, backfills, or database writes.
+
+The JSON report includes metadata, sampled rows, field types, missing/null counts, date parsing, pagination information, and candidate-key checks within the sample. It removes request echoes and redacts the key; never enable HTTP request logging for credential-bearing URLs. Without `--output`, the sanitized report is printed. Failures produce a nonzero exit status; partial results retain successful metadata/pages. Local reports under `data/` are ignored by Git.
+
+See [docs/EIA_SCHEMA.md](docs/EIA_SCHEMA.md) for verified observations and limitations. Offline exploration tests use HTTPX MockTransport and never load the real `.env` file:
+
+```sh
+apps/backend/.venv/bin/python -m pytest apps/backend/tests
+```
+
 ## Dependency setup notes
 
 Vitest uses the patched 4.1 release line, compatible with the existing Vite 6 and Node 20 setup. Some npm 10 versions crash with `Cannot read properties of null (reading 'edgesOut')` when resolving its optional peer dependencies. Use `npm ci` with the supplied lockfile for normal setup. If updating dependencies triggers this resolver error, use temporary newer tools without changing global installations:
