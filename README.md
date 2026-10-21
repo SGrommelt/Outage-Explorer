@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs are available; SQL execution, refresh APIs, and the SQL Explorer UI are not implemented.
+A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; refresh APIs and the SQL Explorer UI are not implemented.
 
 ## Layout
 
@@ -11,6 +11,7 @@ apps/
       api/health.py       # GET /health
       api/auth.py         # Login and current user
       api/datasets.py     # Authorized catalog and paginated previews
+      api/query.py        # Validated single-dataset read-only SQL
       main.py             # FastAPI app
       explore_eia.py      # Bounded schema probe
       extract_eia.py      # Validated Parquet snapshot extraction
@@ -75,9 +76,9 @@ Tokens use a fixed versioned HMAC-SHA256 format with signed subject, issue/expir
 | Ad hoc SQL capability | No | Yes | Yes |
 | Refresh capability | No | No | Yes |
 
-`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Catalog routes authenticate before listing and filter with `allowed_datasets`; preview routes apply `authorize_datasets` before opening a snapshot. SQL routes must require `require_sql` before parsing/executing and authorize every resolved dataset reference, including subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. Future SQL execution still needs its own statement validation and filesystem/function restrictions; this policy helper is not a SQL sandbox. Refresh routes must depend on `require_refresh` before touching data or invoking extraction.
+`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Catalog routes authenticate before listing and filter with `allowed_datasets`; preview routes apply `authorize_datasets` before opening a snapshot. The SQL route requires `require_sql` before SQL parsing, authorizes its one allowed dataset reference, and rejects subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. The SQL endpoint below adds a strict structural compiler and rejects resource-access functions; the role/dataset policy helper alone is not a SQL sandbox. Refresh routes must depend on `require_refresh` before touching data or invoking extraction.
 
-Login, identity, public liveness, and authorized catalog/preview endpoints exist. SQL and refresh APIs remain deferred. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
+Login, identity, public liveness, and authorized catalog/preview endpoints exist. The restricted SQL endpoint is implemented; the refresh API remains deferred. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
 
 This local development foundation has no external identity provider, registration, password reset, or persistent account database. It adds no dependencies. Use HTTPS and deployment-level request/rate limits before exposing login outside a trusted local environment; access tokens are bearer credentials. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_auth.py` for offline authentication/policy tests.
 
@@ -116,7 +117,33 @@ JSON dates are ISO strings, decimals are exact decimal strings (not binary-float
 
 Authentication failures return 401; authenticated forbidden datasets return 403; unknown canonical dataset names return 404; invalid preview filters/pagination return 400. Missing, corrupt, or incompatible published data returns a generic 503, with no internal paths, SQL errors, or private snapshot metadata. Successful responses use `Cache-Control: no-store` and `Vary: Authorization` to prevent sharing cached results between personas.
 
-Each request opens one validated, pinned connection and closes it afterward. Preview count and rows therefore use the same immutable snapshot even if publication changes mid-request. Separate page requests may observe newer publications; pagination is not pinned across requests. Existing full-snapshot validation scans all route files internally, but only authorized dataset columns and rows can leave the API; restricted validation failures are generic. This retains the current opening-time validation cost. A complete three-route publication is still required, so the known facility completeness discrepancy continues to block the affected real window. No raw query, refresh API, or frontend was added. Offline FastAPI coverage is in `apps/backend/tests/test_datasets.py`.
+Each request opens one validated, pinned connection and closes it afterward. Preview count and rows therefore use the same immutable snapshot even if publication changes mid-request. Separate page requests may observe newer publications; pagination is not pinned across requests. Existing full-snapshot validation scans all route files internally, but only authorized dataset columns and rows can leave the API; restricted validation failures are generic. This retains the current opening-time validation cost. A complete three-route publication is still required, so the known facility completeness discrepancy continues to block the affected real window. The preview endpoint does not accept SQL; use the restricted query endpoint below. No refresh API or frontend was added. Offline FastAPI coverage is in `apps/backend/tests/test_datasets.py`.
+
+## Read-only SQL (US-04, US-05)
+
+`POST /query` requires an Analyst or Admin bearer token. Viewer is denied with **403 before SQL validation or snapshot access**, including queries against national data. Missing/invalid authentication returns 401. The JSON body is `{"sql": "SELECT outage_date, outage_mw FROM national_outages ORDER BY outage_date DESC LIMIT 10"}`; extra fields and SQL longer than 10,000 characters are rejected.
+
+The supported subset is intentionally small:
+
+- Exactly one `SELECT` from one unqualified canonical dataset: `national_outages`, `facility_outages`, or `generator_outages`. Each reference is checked with the same central dataset policy before opening the snapshot.
+- Projection is `*` alone or up to 32 plain, unqualified columns. Quoted column names are accepted; aliases and expressions are not. Result rows are arrays aligned with `columns`, preserving duplicate selected column names.
+- Optional `WHERE` supports column/literal comparisons (`=`, `<>`, `<`, `<=`, `>`, `>=`), `AND`, `OR`, `NOT`, parentheses, `BETWEEN`, `IN` with up to 100 literals, `IS [NOT] NULL`, and `LIKE`. Literals include strings, booleans, nulls, decimal numbers with at most 18 integer digits and six fractional digits, and date literals such as `DATE '2026-01-01'`.
+- Optional `ORDER BY` accepts plain columns with ASC/DESC and NULLS FIRST/LAST. Without it, the server orders by the dataset's natural key.
+- Optional `LIMIT` is a nonnegative integer. No OFFSET, joins, subqueries, CTEs, unions, aggregates, functions, arithmetic, casts other than date literals, DISTINCT, qualified table names, table aliases, star modifiers, or other clauses are accepted. One trailing semicolon and ordinary comments are allowed; extra statements are not.
+
+SQLGlot (already installed) parses the DuckDB dialect. The server checks the AST and its allowed arguments, rejects unsupported nodes/clauses, and builds fresh SQL using fixed dataset queries and canonical columns. **Original SQL text is never sent to DuckDB.** Literal values are bound parameters. All scalar/table functions and external scans are rejected, including DuckDB file readers, dynamic query functions, metadata functions, sequence mutations, and settings access. Writes, DDL, COPY, ATTACH, PRAGMA, extension loading, and multiple statements fail before opening a connection. AST size is capped at 512 nodes.
+
+The server returns at most **200 rows**, regardless of a larger/absent user LIMIT. It fetches at most 201 rows to detect truncation, returning `columns` (objects with `name` and DuckDB `type`), `rows` (arrays), `row_count`, `row_limit=200`, and `truncated`. The flag means the **server cap** omitted rows from the requested result: a user LIMIT of 10 returns at most 10 with `truncated=false`, while a larger/unlimited result exceeding 200 returns `truncated=true`. Dates are ISO strings, decimals are exact decimal strings, and nulls stay null. Returned percentages/decimals are never converted to binary floats.
+
+```sh
+curl -X POST http://127.0.0.1:8000/query \
+  -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Content-Type: application/json' \
+  --data '{"sql":"SELECT outage_date, facility_id, outage_mw FROM facility_outages WHERE outage_mw > 0 ORDER BY outage_date DESC LIMIT 25"}'
+```
+
+Successful responses are `no-store` and vary by Authorization. Malformed/unsupported SQL, invalid request bodies, and binding/conversion errors return a generic 400 without SQL text, engine errors, or paths. Unknown/forbidden datasets return generic 403. Missing/invalid snapshots or storage failures return generic 503. Each request uses one validated pinned connection, closes it afterward, and exposes no snapshot metadata.
+
+The strict subset is the SQL security boundary; this is not a general-purpose DuckDB shell. Syntax/row limits do not impose a hard execution-time or scan-memory budget: snapshot validation and allowed sorts/filters can still scan local data. Existing immutable-file/retention and full-snapshot validation assumptions remain. Only trusted published analytical views are exposed; expanding the subset or enabling any function requires explicit security review and tests. No caching, database writes, network/EIA requests, or new dependencies were added. Offline regressions are in `apps/backend/tests/test_query.py`.
 
 ## Frontend
 
@@ -229,7 +256,7 @@ Relationships are daily: facility observations relate to national observations b
 
 Opening validates all three physical Parquet schemas, rows, keys, counts, daily coverage, and (for incremental snapshots) embedded publication metadata using the existing snapshot reader. `AnalyticsError` reports missing publications, incompatible schemas, or invalid snapshots; no partial connection is returned. Validation scans the existing datasets in memory, but writes no data, audits, or catalog files. Views subsequently scan explicit immutable Parquet paths with Hive partition inference disabled. They never glob staging files, orphan runs, or historical versions.
 
-The pointer is resolved once per connection. Publication during or after opening cannot mix versions: the existing connection stays pinned to its validated run. Open a new connection to observe a newly published snapshot. This relies on the existing contract that published files are immutable and old runs are retained; manual edits/deletion remain unsupported. The helper owns a fresh in-memory catalog; close it after use. It provides local model access only; SQL Explorer execution policy and API lifecycle integration are future work.
+The pointer is resolved once per connection. Publication during or after opening cannot mix versions: the existing connection stays pinned to its validated run. Open a new connection to observe a newly published snapshot. This relies on the existing contract that published files are immutable and old runs are retained; manual edits/deletion remain unsupported. The helper owns a fresh in-memory catalog; close it after use. It provides local model access; the restricted `/query` endpoint applies the SQL execution policy, while SQL Explorer UI integration remains future work.
 
 Example SQL for a chosen snapshot (dates below are illustrative):
 
