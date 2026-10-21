@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { SessionProvider, useSession } from "@/components/session";
 import { Button } from "@/components/ui/button";
+import { Datasets } from "@/components/datasets";
+import { SqlExplorer } from "@/components/sql-explorer";
 import { cn } from "@/lib/utils";
 
 function Login() {
@@ -58,10 +60,7 @@ function Shell() {
       <main className="min-w-0 rounded-xl border border-slate-200 bg-white p-6 sm:p-9">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Workspace</p>
         <h1 className="mt-3 text-2xl font-semibold">{active.label}</h1>
-        <p className="mt-4 max-w-xl leading-7 text-slate-600">{active.id === "datasets"
-          ? user.role === "viewer" ? "Your workspace is limited to national-level outage trends. Dataset browsing will be available here in the next step." : "Browse authorized national, facility, and generator datasets here in the next step."
-          : active.id === "sql" ? "The read-only SQL workspace will be available here in a future step."
-          : "Admin data refresh and job status will be available here in a future step."}</p>
+        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : <p className="mt-4 text-slate-600">Admin data refresh and job status will be available here in a future step.</p>}
       </main>
     </div>
   </div>;

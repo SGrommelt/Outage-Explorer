@@ -18,7 +18,7 @@ function submit() {
   fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 }
 function mockLogin(role: Role, expires = 600) {
-  const fetcher = vi.fn().mockResolvedValueOnce(reply({ ...token, expires_in: expires })).mockResolvedValueOnce(reply({ username: "local-user", role }));
+  const fetcher = vi.fn().mockImplementation(() => Promise.resolve(reply({ datasets: [] }))).mockResolvedValueOnce(reply({ ...token, expires_in: expires })).mockResolvedValueOnce(reply({ username: "local-user", role }));
   vi.stubGlobal("fetch", fetcher);
   return fetcher;
 }
@@ -51,7 +51,7 @@ test.each(["viewer", "analyst", "admin"] as const)("login identifies %s through 
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
     expect(screen.getByRole("heading", { name: "Refresh" })).toBeVisible();
   }
-  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(fetcher.mock.calls.slice(2).every(call => call[0] === "/api/datasets")).toBe(true);
   expect(localStorage.length).toBe(0); expect(sessionStorage.length).toBe(0);
 });
 
