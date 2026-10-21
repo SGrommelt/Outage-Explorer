@@ -1,0 +1,29 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.ruff_cache/
+# JavaScript
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+# Local data
+data/
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite3
+# Tools and operating system
+.DS_Store
+.idea/
+.vscode/
+*.log

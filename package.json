@@ -1,0 +1,13 @@
+{
+  "name": "outage-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/frontend"],
+  "engines": { "node": ">=20.9.0" },
+  "scripts": {
+    "dev": "npm run dev --workspace @outage-explorer/frontend",
+    "build": "npm run build --workspace @outage-explorer/frontend",
+    "test": "npm run test --workspace @outage-explorer/frontend",
+    "typecheck": "npm run typecheck --workspace @outage-explorer/frontend"
+  }
+}
