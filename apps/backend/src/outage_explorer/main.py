@@ -6,14 +6,17 @@ from fastapi.responses import JSONResponse
 
 from outage_explorer.api.health import router as health_router
 from outage_explorer.api.auth import router as auth_router
+from outage_explorer.api.datasets import router as datasets_router
 
 app = FastAPI(title="Outage Explorer", version="0.1.0")
 app.include_router(health_router)
 
 app.include_router(auth_router)
+app.include_router(datasets_router)
 
 
 @app.exception_handler(RequestValidationError)
 async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
     # FastAPI's default validation errors can echo a submitted password/token.
-    return JSONResponse(status_code=422, content={"detail": "Invalid request."})
+    status = 400 if request.url.path == "/datasets" or request.url.path.startswith("/datasets/") else 422
+    return JSONResponse(status_code=status, content={"detail": "Invalid request."})

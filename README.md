@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Analytical API endpoints and the SQL Explorer UI are not implemented.
+A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs are available; SQL execution, refresh APIs, and the SQL Explorer UI are not implemented.
 
 ## Layout
 
@@ -9,6 +9,8 @@ apps/
   backend/
     src/outage_explorer/
       api/health.py       # GET /health
+      api/auth.py         # Login and current user
+      api/datasets.py     # Authorized catalog and paginated previews
       main.py             # FastAPI app
       explore_eia.py      # Bounded schema probe
       extract_eia.py      # Validated Parquet snapshot extraction
@@ -73,11 +75,48 @@ Tokens use a fixed versioned HMAC-SHA256 format with signed subject, issue/expir
 | Ad hoc SQL capability | No | Yes | Yes |
 | Refresh capability | No | No | Yes |
 
-`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Future catalog routes must authenticate before listing and filter with `allowed_datasets`; preview routes must depend on `require_dataset` before opening a snapshot. SQL routes must require `require_sql` before parsing/executing and authorize every resolved dataset reference, including subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. Future SQL execution still needs its own statement validation and filesystem/function restrictions; this policy helper is not a SQL sandbox. Refresh routes must depend on `require_refresh` before touching data or invoking extraction.
+`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Catalog routes authenticate before listing and filter with `allowed_datasets`; preview routes apply `authorize_datasets` before opening a snapshot. SQL routes must require `require_sql` before parsing/executing and authorize every resolved dataset reference, including subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. Future SQL execution still needs its own statement validation and filesystem/function restrictions; this policy helper is not a SQL sandbox. Refresh routes must depend on `require_refresh` before touching data or invoking extraction.
 
-Only login, identity, and public liveness endpoints exist at this stage. Catalog, preview, SQL, and refresh APIs are intentionally deferred. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
+Login, identity, public liveness, and authorized catalog/preview endpoints exist. SQL and refresh APIs remain deferred. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
 
 This local development foundation has no external identity provider, registration, password reset, or persistent account database. It adds no dependencies. Use HTTPS and deployment-level request/rate limits before exposing login outside a trusted local environment; access tokens are bearer credentials. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_auth.py` for offline authentication/policy tests.
+
+## Dataset catalog and previews (US-02, US-03, US-05)
+
+Both routes require `Authorization: Bearer <access_token>` from `/auth/login`. They use the server's published snapshot at `data/eia/incremental` and apply role/dataset policy **before** opening a snapshot or DuckDB connection. Viewer sees only `national_outages`; Analyst and Admin also see `facility_outages` and `generator_outages`. Restricted direct URLs return 403 even with altered filters. Clients cannot supply file paths, SQL, dataset aliases, or sort expressions.
+
+- `GET /datasets` returns `{"datasets": [...]}`. Each item has `name`, `description`, and `columns`, where each column has `name` and its DuckDB `type` (for example `DATE`, `VARCHAR`, or `DECIMAL(24,6)`). Only authorized schemas are returned.
+- `GET /datasets/{dataset_name}/preview` returns `dataset`, `page`, `page_size`, `total`, and `rows`. `total` counts all rows matching the filters, before pagination. Empty results or pages beyond the last page return `rows: []`; an out-of-range page retains the filtered total.
+
+Preview query parameters:
+
+| Parameter | Behavior |
+| --- | --- |
+| `start_date`, `end_date` | Optional ISO `YYYY-MM-DD` dates, inclusive; either bound may be supplied. Reversed/invalid dates return 400. |
+| `facility_id` | Optional exact, opaque string match, preserving leading zeros. Supported only for facility/generator data; national requests reject it with 400. Blank/padded values or values longer than 256 characters are rejected. |
+| `page` | One-based integer, default 1; allowed 1–2,147,483,647. |
+| `page_size` | Integer, default 50; strictly bounded to 1–200. |
+
+Unknown or repeated query parameters are rejected for preview requests. All filter values, limits, and offsets are bound parameters. Dataset queries and order clauses come from a fixed server-owned mapping. Ordering is ascending by `outage_date`, then `facility_id` and `generator_id` where applicable, using the validated provisional natural keys.
+
+For example, with a locally acquired token in `ACCESS_TOKEN`:
+
+```sh
+curl -H "Authorization: Bearer $ACCESS_TOKEN" http://127.0.0.1:8000/datasets
+curl -H "Authorization: Bearer $ACCESS_TOKEN"   'http://127.0.0.1:8000/datasets/national_outages/preview?start_date=2026-10-18&end_date=2026-10-20&page=1&page_size=50'
+# Analyst/Admin only:
+curl -H "Authorization: Bearer $ACCESS_TOKEN"   'http://127.0.0.1:8000/datasets/generator_outages/preview?facility_id=46&page_size=25'
+```
+
+JSON dates are ISO strings, decimals are exact decimal strings (not binary-float JSON numbers), nulls remain JSON `null`, and pagination/count values are integers. Example preview response:
+
+```json
+{"dataset":"national_outages","page":1,"page_size":50,"total":1,"rows":[{"outage_date":"2026-10-20","capacity_mw":"100.000000","outage_mw":"20.000000","percent_outage":"20.000000"}]}
+```
+
+Authentication failures return 401; authenticated forbidden datasets return 403; unknown canonical dataset names return 404; invalid preview filters/pagination return 400. Missing, corrupt, or incompatible published data returns a generic 503, with no internal paths, SQL errors, or private snapshot metadata. Successful responses use `Cache-Control: no-store` and `Vary: Authorization` to prevent sharing cached results between personas.
+
+Each request opens one validated, pinned connection and closes it afterward. Preview count and rows therefore use the same immutable snapshot even if publication changes mid-request. Separate page requests may observe newer publications; pagination is not pinned across requests. Existing full-snapshot validation scans all route files internally, but only authorized dataset columns and rows can leave the API; restricted validation failures are generic. This retains the current opening-time validation cost. A complete three-route publication is still required, so the known facility completeness discrepancy continues to block the affected real window. No raw query, refresh API, or frontend was added. Offline FastAPI coverage is in `apps/backend/tests/test_datasets.py`.
 
 ## Frontend
 
