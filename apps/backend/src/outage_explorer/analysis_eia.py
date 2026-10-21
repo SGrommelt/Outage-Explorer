@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 import gzip
 import hashlib
 import json
@@ -25,7 +25,7 @@ import pyarrow as pa
 from outage_explorer.analytics import VIEWS
 from outage_explorer.diagnostics import find_anomalies, reconcile_daily, reconcile_facilities
 from outage_explorer.explore_eia import DEFAULT_ENV, ROUTES, ExplorationError, load_api_key, metadata_fields, read_page, safe_json
-from outage_explorer.extract_eia import ExtractionError, IDENTIFIERS, MEASURES, parse_date, request_body, schema_for, validate_record
+from outage_explorer.extract_eia import ExtractionError, IDENTIFIERS, MEASURES, parse_date, request_body, schema_for, validate_record, numeric
 
 
 def encoded(value) -> str:
@@ -255,6 +255,114 @@ def analyse(source: dict) -> dict:
     return result
 
 
+def inspect_temporal(source: dict) -> dict:
+    """Offline candidate inventory, not an assertion that capacity must be stable.
+
+    The 0.005 percentage-point comparison is the nearest-two-decimal rounding
+    interval motivated by the maximum displayed precision here, not a verified EIA contract.
+    Neither ordinary transitions nor coordinated capacity changes are counted
+    as independent source defects by this function.
+    """
+    baseline = analyse(source)
+    if baseline['status'] != 'diagnostic_only_completeness_unverified':
+        raise ExtractionError('Temporal inspection requires validated record evidence.')
+    result = {'purpose': source['purpose'], 'production_eligible': False,
+              'start': source['start'], 'end': source['end'],
+              'classification': 'candidate_inventory_not_confirmed_source_anomalies',
+              'rounding_assumption': 'nearest 0.01 percentage point; interval +/-0.005; not an EIA guarantee',
+              'membership_changes': [], 'capacity_changes': [], 'capacity_decomposition': [],
+              'label_changes': [], 'cross_grain_label_mismatches': [], 'missing_labels': [],
+              'percentage_candidates': [], 'undefined_ratios': [], 'skipped_intervals': [],
+              'source_percentage_decimal_places': {}, 'maximum_percentage_gaps': {},
+              'baseline_anomaly_counts': {name: len(rows) for name, rows in baseline['anomalies'].items()}}
+    observations = {}
+    # analyse() checks checksums, exact queries, metadata, required values,
+    # date coverage, and uniqueness before any candidate comparison is allowed.
+    for route in ROUTES:
+        daily = {}
+        places = {}
+        for page in source['routes'][route]['pages']:
+            for row in page['response']['data']:
+                day = parse_date(row['period'])
+                key = tuple(row[field] for field in IDENTIFIERS[route])
+                daily.setdefault(day, {})[key] = row
+                identity = {'route': route, 'outage_date': day,
+                            **{field: row[field] for field in IDENTIFIERS[route]}}
+                if IDENTIFIERS[route] and row.get('facilityName') in (None, ''):
+                    result['missing_labels'].append({**identity, 'facilityName': row.get('facilityName')})
+                capacity, outage, percent = (numeric(row[field], field) for field in ('capacity', 'outage', 'percentOutage'))
+                digits = max(0, -Decimal(str(row['percentOutage'])).as_tuple().exponent)
+                places[str(digits)] = places.get(str(digits), 0) + 1
+                values = {'capacity_mw': row['capacity'], 'outage_mw': row['outage'],
+                          'reported_percent_outage': row['percentOutage']}
+                if capacity <= 0:
+                    result['undefined_ratios'].append({**identity, **values})
+                else:
+                    with localcontext() as context:
+                        context.prec = 60
+                        # Cross multiplication makes the boundary decision exact;
+                        # the repeating ratio is calculated only for display.
+                        outside = abs(percent * capacity - outage * 100) > Decimal('0.005') * capacity
+                        ratio = outage / capacity * 100
+                        comparison = {**identity, **values, 'calculated_percent_outage': ratio,
+                                      'gap_percentage_points': percent - ratio}
+                        previous_max = result['maximum_percentage_gaps'].get(route)
+                        if previous_max is None or abs(percent - ratio) > abs(previous_max['gap_percentage_points']):
+                            result['maximum_percentage_gaps'][route] = comparison
+                        if outside:
+                            result['percentage_candidates'].append({**comparison,
+                                'classification': 'review_rounding_assumption_and_source_definition'})
+        observations[route] = daily
+        result['source_percentage_decimal_places'][route] = places
+        days = sorted(daily)
+        for before, after in zip(days, days[1:]):
+            if (after - before).days != 1:
+                result['skipped_intervals'].append({'route': route, 'previous_date': before, 'outage_date': after})
+                continue
+            old, new = daily[before], daily[after]
+            old_keys, new_keys = set(old), set(new)
+            added, removed = sorted(new_keys - old_keys), sorted(old_keys - new_keys)
+            common = sorted(old_keys & new_keys)
+            if added or removed:
+                result['membership_changes'].append({'route': route, 'previous_date': before, 'outage_date': after,
+                                                     'added_keys': added, 'removed_keys': removed})
+            with localcontext() as context:
+                context.prec = 60
+                changed = []
+                for key in common:
+                    previous, current = old[key], new[key]
+                    identity = {field: current[field] for field in IDENTIFIERS[route]}
+                    delta = Decimal(str(current['capacity'])) - Decimal(str(previous['capacity']))
+                    if delta:
+                        change = {'route': route, 'previous_date': before, 'outage_date': after, **identity,
+                                  'previous_capacity_mw': previous['capacity'], 'capacity_mw': current['capacity'],
+                                  'change_mw': delta, 'classification': 'reported_capacity_change_not_proven_defect'}
+                        result['capacity_changes'].append(change)
+                        changed.append(delta)
+                    if previous.get('facilityName') != current.get('facilityName'):
+                        result['label_changes'].append({'route': route, 'previous_date': before, 'outage_date': after,
+                            **identity, 'previous_name': previous.get('facilityName'), 'name': current.get('facilityName')})
+                if changed or added or removed:
+                    previous_total = sum((Decimal(str(row['capacity'])) for row in old.values()), Decimal(0))
+                    total = sum((Decimal(str(row['capacity'])) for row in new.values()), Decimal(0))
+                    added_mw = sum((Decimal(str(new[k]['capacity'])) for k in added), Decimal(0))
+                    removed_mw = sum((Decimal(str(old[k]['capacity'])) for k in removed), Decimal(0))
+                    result['capacity_decomposition'].append({'route': route, 'previous_date': before, 'outage_date': after,
+                        'previous_capacity_mw': previous_total, 'capacity_mw': total, 'total_change_mw': total - previous_total,
+                        'stable_key_count': len(common), 'changed_stable_keys': len(changed),
+                        'stable_key_change_mw': sum(changed, Decimal(0)),
+                        'added_key_count': len(added), 'added_capacity_mw': added_mw,
+                        'removed_key_count': len(removed), 'removed_capacity_mw': removed_mw})
+    facilities = observations['facility-nuclear-outages']
+    for day, generators in observations['generator-nuclear-outages'].items():
+        for (facility, generator), row in sorted(generators.items()):
+            parent = facilities.get(day, {}).get((facility,))
+            if parent is not None and parent.get('facilityName') != row.get('facilityName'):
+                result['cross_grain_label_mismatches'].append({'outage_date': day, 'facility': facility,
+                    'generator': generator, 'facility_name': parent.get('facilityName'), 'generator_facility_name': row.get('facilityName')})
+    return result
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -262,9 +370,10 @@ def main(argv=None) -> int:
     fetch.add_argument('--output', type=Path, required=True, help='Fresh non-production .json.gz evidence file')
     fetch.add_argument('--end', type=parse_date)
     fetch.add_argument('--resume-from', type=Path, help='Resume verified partial evidence into a fresh output file')
-    replay = sub.add_parser('analyse')
-    replay.add_argument('--input', type=Path, required=True)
-    replay.add_argument('--output', type=Path, required=True)
+    for command in ('analyse', 'inspect'):
+        replay = sub.add_parser(command)
+        replay.add_argument('--input', type=Path, required=True)
+        replay.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == 'fetch':
@@ -276,14 +385,19 @@ def main(argv=None) -> int:
                            'failures': {r: e['failures'] for r, e in source['routes'].items()}}))
             return 0 if 'start' in source and not any(e['failures'] for e in source['routes'].values()) else 1
         source = json.loads(gzip.decompress(args.input.read_bytes()))
-        result = analyse(source)
+        result = inspect_temporal(source) if args.command == 'inspect' else analyse(source)
         analysis_destination(args.output)
         if args.input.resolve() == args.output.resolve():
             raise ExtractionError('Analysis output must not overwrite source evidence.')
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, default=str, indent=2, allow_nan=False) + '\n')
-        print(encoded({'status': result['status'], 'routes': result['routes'],
-                       'anomaly_counts': {kind: len(rows) for kind, rows in result['anomalies'].items()}}))
+        if args.command == 'inspect':
+            print(encoded({'classification': result['classification'],
+                           'capacity_decomposition': result['capacity_decomposition'],
+                           'candidate_counts': {name: len(result[name]) for name in ('membership_changes', 'percentage_candidates', 'label_changes', 'cross_grain_label_mismatches', 'missing_labels')}}))
+        else:
+            print(encoded({'status': result['status'], 'routes': result['routes'],
+                           'anomaly_counts': {kind: len(rows) for kind, rows in result['anomalies'].items()}}))
         return 0
     except (ExtractionError, ExplorationError, OSError, ValueError, KeyError, TypeError, duckdb.Error, pa.ArrowException, httpx.RequestError):
         print('Analysis operation failed; partial evidence is retained where available. Details withheld.')

@@ -1,0 +1,150 @@
+{
+  "purpose": "NON_PRODUCTION_UNVERIFIED_EVIDENCE",
+  "production_eligible": false,
+  "source_file": "eia-real-30-days-source.json.gz",
+  "source_sha256": "bf866632f07dfbaf46ff8b0bb4e968861afb31262fe0cc84a342bb04c9e4c1f6",
+  "start": "2026-09-22",
+  "end": "2026-10-21",
+  "live_api_requests_for_this_investigation": 0,
+  "capacity_decomposition": [
+    {
+      "route": "us-nuclear-outages",
+      "previous_date": "2026-09-30",
+      "outage_date": "2026-10-01",
+      "previous_capacity_mw": "97620.5",
+      "capacity_mw": "100056.7",
+      "total_change_mw": "2436.2",
+      "stable_key_count": 1,
+      "changed_stable_keys": 1,
+      "stable_key_change_mw": "2436.2",
+      "added_key_count": 0,
+      "added_capacity_mw": "0",
+      "removed_key_count": 0,
+      "removed_capacity_mw": "0"
+    },
+    {
+      "route": "facility-nuclear-outages",
+      "previous_date": "2026-09-30",
+      "outage_date": "2026-10-01",
+      "previous_capacity_mw": "97620.5",
+      "capacity_mw": "100056.7",
+      "total_change_mw": "2436.2",
+      "stable_key_count": 55,
+      "changed_stable_keys": 47,
+      "stable_key_change_mw": "2436.2",
+      "added_key_count": 0,
+      "added_capacity_mw": "0",
+      "removed_key_count": 0,
+      "removed_capacity_mw": "0"
+    },
+    {
+      "route": "generator-nuclear-outages",
+      "previous_date": "2026-09-30",
+      "outage_date": "2026-10-01",
+      "previous_capacity_mw": "97620.5",
+      "capacity_mw": "100056.7",
+      "total_change_mw": "2436.2",
+      "stable_key_count": 95,
+      "changed_stable_keys": 78,
+      "stable_key_change_mw": "2436.2",
+      "added_key_count": 0,
+      "added_capacity_mw": "0",
+      "removed_key_count": 0,
+      "removed_capacity_mw": "0"
+    }
+  ],
+  "representative_generator_capacity_changes": [
+    {
+      "route": "generator-nuclear-outages",
+      "previous_date": "2026-09-30",
+      "outage_date": "2026-10-01",
+      "facility": "3166",
+      "generator": "2",
+      "previous_capacity_mw": "1264.7",
+      "capacity_mw": "1346.7",
+      "change_mw": "82.0",
+      "classification": "reported_capacity_change_not_proven_defect"
+    },
+    {
+      "route": "generator-nuclear-outages",
+      "previous_date": "2026-09-30",
+      "outage_date": "2026-10-01",
+      "facility": "46",
+      "generator": "1",
+      "previous_capacity_mw": "1227.4",
+      "capacity_mw": "1254.8",
+      "change_mw": "27.4",
+      "classification": "reported_capacity_change_not_proven_defect"
+    },
+    {
+      "route": "generator-nuclear-outages",
+      "previous_date": "2026-09-30",
+      "outage_date": "2026-10-01",
+      "facility": "7722",
+      "generator": "1",
+      "previous_capacity_mw": "1123",
+      "capacity_mw": "1179",
+      "change_mw": "56",
+      "classification": "reported_capacity_change_not_proven_defect"
+    }
+  ],
+  "source_percentage_decimal_places": {
+    "us-nuclear-outages": {
+      "2": 28,
+      "1": 2
+    },
+    "facility-nuclear-outages": {
+      "2": 305,
+      "0": 1293,
+      "1": 52
+    },
+    "generator-nuclear-outages": {
+      "0": 2850
+    }
+  },
+  "rounding_assumption": "nearest 0.01 percentage point; interval +/-0.005; not an EIA guarantee",
+  "candidate_counts": {
+    "membership_changes": 0,
+    "label_changes": 0,
+    "cross_grain_label_mismatches": 0,
+    "missing_labels": 0,
+    "percentage_candidates": 0,
+    "undefined_ratios": 0
+  },
+  "confirmed_source_data_anomalies": 0,
+  "independent_api_pagination_issues": 1,
+  "three_anomaly_requirement_met": false,
+  "interpretation": "Returned membership is stable; reported capacity changes for existing IDs explain the fleet delta. Seasonal basis or coordinated ratings refresh is unconfirmed. No invariant requiring stable ratings is established.",
+  "maximum_percentage_gaps": {
+    "us-nuclear-outages": {
+      "route": "us-nuclear-outages",
+      "outage_date": "2026-10-19",
+      "capacity_mw": "100056.7",
+      "outage_mw": "19896.304",
+      "reported_percent_outage": "19.89",
+      "calculated_percent_outage": "19.8850291884501487656498765200131525425083977384822805469299",
+      "gap_percentage_points": "0.0049708115498512343501234799868474574916022615177194530701"
+    },
+    "facility-nuclear-outages": {
+      "route": "facility-nuclear-outages",
+      "outage_date": "2026-09-27",
+      "facility": "6026",
+      "capacity_mw": "2264.4",
+      "outage_mw": "226.1",
+      "reported_percent_outage": "9.98",
+      "calculated_percent_outage": "9.98498498498498498498498498498498498498498498498498498498498",
+      "gap_percentage_points": "-0.00498498498498498498498498498498498498498498498498498498498"
+    },
+    "generator-nuclear-outages": {
+      "route": "generator-nuclear-outages",
+      "outage_date": "2026-09-22",
+      "facility": "46",
+      "generator": "1",
+      "capacity_mw": "1227.4",
+      "outage_mw": "1227.4",
+      "reported_percent_outage": "100",
+      "calculated_percent_outage": "100",
+      "gap_percentage_points": "0.000000"
+    }
+  }
+}

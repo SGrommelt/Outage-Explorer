@@ -204,16 +204,21 @@ def test_unadvertised_filters_or_changed_query_scope_are_rejected(source):
         analysis.analyse(source)
 
 
-def test_cli_replays_without_credentials_or_network(source, tmp_path, monkeypatch):
+@pytest.mark.parametrize('command', ['analyse', 'inspect'])
+def test_cli_replays_without_credentials_or_network(source, tmp_path, monkeypatch, command):
     path = tmp_path / 'eia-analysis/source.json.gz'
     analysis.save_source(path, source, KEY)
     monkeypatch.setattr(analysis, 'load_api_key', lambda _: pytest.fail('Offline replay must not load credentials'))
     monkeypatch.setattr(analysis.httpx, 'Client', lambda **_: pytest.fail('Offline replay must not access network'))
     output = path.with_name('analysis.json')
-    assert analysis.main(['analyse', '--input', str(path), '--output', str(output)]) == 0
+    assert analysis.main([command, '--input', str(path), '--output', str(output)]) == 0
     result = json.loads(output.read_text())
-    assert len(result['daily']) == 30 and result['production_eligible'] is False
-    assert analysis.main(['analyse', '--input', str(path), '--output', str(tmp_path / 'production/current.json')]) == 1
+    assert result['production_eligible'] is False
+    if command == 'analyse':
+        assert len(result['daily']) == 30
+    else:
+        assert result['classification'] == 'candidate_inventory_not_confirmed_source_anomalies'
+    assert analysis.main([command, '--input', str(path), '--output', str(tmp_path / 'production/current.json')]) == 1
     assert not (tmp_path / 'production').exists()
 
 
@@ -237,3 +242,81 @@ def test_retained_real_window_reproduces_documented_results_offline():
     assert not any(result['anomalies'].values())
     assert summary['source_data_anomalies_found'] == 0
     assert summary['three_anomaly_requirement_met'] is False
+
+
+def rehash_pages(source):
+    for entry in source['routes'].values():
+        for page in entry['pages']:
+            page['sha256'] = analysis.digest(page['response'])
+
+
+def test_temporal_capacity_changes_are_decomposed_not_asserted_as_defects(source):
+    row = source['routes'][ROUTES[2]]['pages'][0]['response']['data'][2]
+    row['capacity'] = '125'
+    rehash_pages(source)
+    result = analysis.inspect_temporal(source)
+    changes = [r for r in result['capacity_decomposition'] if r['route'] == ROUTES[2]]
+    assert [r['total_change_mw'] for r in changes] == [Decimal(25), Decimal(-25)]
+    assert all(r['added_key_count'] == r['removed_key_count'] == 0 and r['changed_stable_keys'] == 1 for r in changes)
+    assert result['membership_changes'] == []
+    assert all(r['classification'] == 'reported_capacity_change_not_proven_defect' for r in result['capacity_changes'])
+
+
+def test_temporal_membership_and_nullable_labels_are_separate_candidates(source):
+    row = source['routes'][ROUTES[2]]['pages'][0]['response']['data'][2]
+    row['facility'] = '002'
+    row['facilityName'] = None
+    rehash_pages(source)
+    result = analysis.inspect_temporal(source)
+    assert len(result['membership_changes']) == 2
+    event = result['membership_changes'][0]
+    assert event['added_keys'] == [('002', '1')] and event['removed_keys'] == [('001', '1')]
+    assert len(result['missing_labels']) == 1
+    assert all(r['added_capacity_mw'] == r['removed_capacity_mw'] == Decimal(100) for r in result['capacity_decomposition'])
+    assert result['production_eligible'] is False
+
+
+def test_percentage_boundary_is_exact_and_ordinary_rounding_is_not_flagged(source):
+    rows = source['routes'][ROUTES[0]]['pages'][0]['response']['data']
+    rows[0].update(capacity='200', outage='20.01', percentOutage='10.00')
+    rows[1].update(capacity='200', outage='20.012', percentOutage='10.00')
+    rehash_pages(source)
+    result = analysis.inspect_temporal(source)
+    assert len(result['percentage_candidates']) == 1
+    candidate = result['percentage_candidates'][0]
+    assert candidate['outage_date'] == START + timedelta(days=1)
+    assert candidate['calculated_percent_outage'] == Decimal('10.006')
+    assert candidate['gap_percentage_points'] == Decimal('-0.006')
+    assert 'review' in candidate['classification']  # Source rounding contract remains unverified.
+
+
+def test_temporal_does_not_bridge_missing_dates_or_ignore_checksum_faults(source):
+    entry = source['routes'][ROUTES[0]]
+    del entry['pages'][0]['response']['data'][1]
+    for page in entry['pages']:
+        page['response']['total'] = '29'
+    entry['pages'][1]['query']['offset'] = 29
+    rehash_pages(source)
+    result = analysis.inspect_temporal(source)
+    assert result['baseline_anomaly_counts']['missing_dates'] == 1
+    assert len(result['skipped_intervals']) == 1
+    entry['pages'][0]['response']['data'][0]['capacity'] = '100'
+    with pytest.raises(ExtractionError, match='checksum'):
+        analysis.inspect_temporal(source)
+
+
+def test_real_temporal_inspection_has_no_membership_or_percentage_defect():
+    directory = Path(__file__).resolve().parents[3] / 'docs/evidence'
+    source = json.loads(gzip.decompress((directory / 'eia-real-30-days-source.json.gz').read_bytes()))
+    result = analysis.inspect_temporal(source)
+    summary = json.loads((directory / 'eia-real-30-days-temporal-summary.json').read_text())
+    assert json.loads(analysis.encoded(result['capacity_decomposition'])) == summary['capacity_decomposition']
+    assert [row['changed_stable_keys'] for row in result['capacity_decomposition']] == [1, 47, 78]
+    assert all(row['total_change_mw'] == row['stable_key_change_mw'] == Decimal('2436.2') for row in result['capacity_decomposition'])
+    assert all(row['added_key_count'] == row['removed_key_count'] == 0 for row in result['capacity_decomposition'])
+    assert all(row['outage_date'] == date(2026, 10, 1) for row in result['capacity_changes'])
+    for name in ('membership_changes', 'label_changes', 'cross_grain_label_mismatches', 'missing_labels', 'percentage_candidates', 'undefined_ratios'):
+        assert result[name] == []
+    assert result['source_percentage_decimal_places'] == summary['source_percentage_decimal_places']
+    assert json.loads(analysis.encoded(result['maximum_percentage_gaps'])) == summary['maximum_percentage_gaps']
+    assert len(result['capacity_changes']) == 126  # One coordinated step across three grains, not 126 anomalies.

@@ -282,6 +282,8 @@ See [docs/EIA_INCREMENTAL_REFRESH.md](docs/EIA_INCREMENTAL_REFRESH.md) for legac
 
 ## DuckDB analytical model
 
+See [the implemented data model](docs/DATA_MODEL.md) for exact physical/view types, the logical Mermaid ER diagram, invalid/duplicate/orphan handling, snapshot and audit relationships, and exactly seven explicit design decisions.
+
 The smallest model is three independent fact views. There are no copied data tables, inferred dimension tables, automatic joins, or new dependencies. Open a connection from the repository root with the installed backend:
 
 ```sh
@@ -453,7 +455,7 @@ Offline replay uses the existing `schema_for`/`validate_record`, the fixed analy
 | 2026-10-06 | 6008 | 3 | 4003.000000 | 1333.000000 | 0.000000 / 0.000000 |
 | 2026-10-21 | 3166 | 2 | 2694.100000 | 1346.700000 | 0.000000 / 0.000000 |
 
-These are **reconciled examples, not anomalies**. The observed equality is consistent with compatible aggregation, but shared source omissions, definitions, or revisions remain possible. No actual nonzero reconciliation gap was found to explain away. Fleet capacity changes from `97620.500000` MW on September 30 to `100056.700000` MW on October 1, a `2436.200000` MW increase consistently present at all three grains. The reason is not established; capacity-rating updates or population changes are hypotheses. A change alone violates no verified invariant, so it is not presented as a confirmed anomaly.
+These are **reconciled examples, not anomalies**. The observed equality is consistent with compatible aggregation, but shared source omissions, definitions, or revisions remain possible. No actual nonzero reconciliation gap was found to explain away. Fleet capacity changes from `97620.500000` MW on September 30 to `100056.700000` MW on October 1, a `2436.200000` MW increase consistently present at all three grains. The offline temporal investigation below accounts for the full increase using stable-ID capacity changes and rules out membership change within the received population; the underlying capacity-basis methodology remains unconfirmed. A change alone violates no verified invariant.
 
 ### Anomaly evidence and explicit shortfall
 
@@ -464,6 +466,62 @@ The one verified API issue is the facility `total=2850` / 1,650 returned rows / 
 Ordinary source rounding is not treated as an anomaly. Automatic large-change checks were deliberately not enabled without a justified operational baseline or threshold; normal shutdown/restart transitions are not automatically data errors. The product's existing diagnostic range rules flag candidates as `review`, not proven source defects. Invalid records would withhold this workflow's reconciliation rather than silently skip or deduplicate them. Published-snapshot validators and the fleet-share calculation retain their existing rejection/null-status behavior.
 
 The smallest follow-up is to agree an independently justified anomaly definition or an earlier bounded period with externally evidenced unusual observations, then run the same workflow—not invent three examples from this internally consistent window. EIA clarification of facility count/grain semantics is separately still needed for trustworthy production publication. The retained source and summary allow every stated value and zero-anomaly result to be reproduced offline.
+
+## Offline temporal investigation and anomaly shortfall
+
+The follow-up inspected the **same saved September 22–October 21, 2026 evidence** and made **zero live EIA API requests**. [The temporal summary](docs/evidence/eia-real-30-days-temporal-summary.json) records counts, exact capacity decomposition, representative generator values, source archive hash, and the explicit shortfall. The raw evidence archive was not changed. Reproduce the full candidate inventory without credentials/network:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.analysis_eia inspect \
+  --input docs/evidence/eia-real-30-days-source.json.gz \
+  --output data/eia-analysis/temporal-inspection.json
+apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_analysis_eia.py
+```
+
+The command reuses `analyse()` for source/checksum/schema/key validation and the existing reconciliation/diagnostics, then compares adjacent calendar days within each source grain. It never bridges a missing date. It inventories ID additions/removals, stable-ID capacity changes, label changes/missing labels, facility-versus-generator label discrepancies, undefined ratios, and percentage arithmetic candidates. Nullable/changed labels and membership changes are candidates for interpretation, not automatically defects or proof of lifecycle violations. SQL for these investigations is trusted offline logic, not an expansion of the restricted HTTP SQL subset.
+
+### September 30–October 1 capacity decomposition
+
+Within the received evidence, all **55 facility IDs and 95 `(facility, generator)` identities are present on all 30 days**. No IDs appear or disappear. All recorded capacity changes occur at October 1: **47 facilities and 78 generators** increase capacity, with 8 facilities and 17 generators unchanged. Both the facility and generator increases sum exactly to the national **2436.2 MW** step from **97620.5 MW** to **100056.7 MW**. Added and removed capacity contributions are **0 MW** at each grain. The full report's `capacity_changes` lists every changed key, and `capacity_decomposition` independently balances each grain's stable-key changes plus additions minus removals against its total change.
+
+Actual generator examples (one coordinated capacity-basis candidate, **not three anomalies**):
+
+| Facility | Generator | 2026-09-30 capacity MW | 2026-10-01 capacity MW | Change MW |
+| --- | --- | ---: | ---: | ---: |
+| 46 | 1 | 1227.4 | 1254.8 | +27.4 |
+| 3166 | 2 | 1264.7 | 1346.7 | +82.0 |
+| 7722 | 1 | 1123 | 1179 | +56 |
+
+**Verified explanation:** the step is entirely reported capacity changes for existing identifiers in the returned population, not a membership addition/removal. No changed name or cross-grain disagreement accompanies it. One collected vintage cannot establish whether EIA revised earlier published values. **Unconfirmed explanation:** a coordinated capacity-rating refresh or seasonal rating basis could account for the synchronized increases. EIA's [general capacity FAQ](https://www.eia.gov/tools/faqs/faq.php?id=101) distinguishes summer/winter ratings and their test conditions, while its [nuclear data index](https://www.eia.gov/nuclear/data.php) labels the outage product as using annual capacity. Neither reviewed reference nor the retained route metadata specifies an October 1 switch for these routes. We therefore do not claim a proven seasonal mechanism, actual new installed capacity, or a data defect. No documented invariant requires reported capacity to remain constant across dates.
+
+Product handling preserves each day's reported capacity and uses that day's national denominator for US-08. Date-valid, finite, representable changes do not themselves violate ingestion rules. The offline inspector exposes stable-ID changes for review without changing production diagnostics, acceptance, watermarks, or publication.
+
+### Candidate search outcomes and anomaly classification
+
+| Investigation | Observed outcome | Classification / handling |
+| --- | --- | --- |
+| Membership continuity | Zero facility/generator ID changes across 29 adjacent-day intervals per grain | No demonstrated lifecycle anomaly; not independent fleet-coverage proof |
+| Capacity changes for stable IDs | 78 generators / 47 facilities change on October 1; national step fully explained numerically | One coordinated review candidate, no verified violated invariant |
+| Source percentages versus outage/capacity | Zero values outside the nearest-two-decimal rounding interval across all 4,530 received observations | No arithmetic candidate under that explicit assumption |
+| Names and other required attributes | Zero missing labels, zero temporal name changes, zero facility/generator label mismatches; required dates/IDs/measures/units already validated | No demonstrated attribute defect |
+| Negative/impossible/ambiguous observations | Zero existing range, invalid-record, duplicate-key, or missing-route-date flags | No source-data defect under these checks |
+| Facility pagination total | Window `total=2850`, 1,650 unique rows, empty page at offset 1,650, despite 30 dates present | **One verified API metadata/pagination anomaly**; production rejects the run; diagnostic analysis remains unverified |
+
+Source percentage strings have zero to two fractional digits in this archive: national counts are 28 with two digits and 2 with one; facility counts are 305 with two, 52 with one, and 1,293 whole numbers; all 2,850 generator percentages are whole numbers. String formatting alone does not establish a source rounding contract. The inspector checks the **0.005 percentage-point half-unit interval**, using exact cross multiplication (`abs(percent * capacity - outage * 100) > 0.005 * capacity` for positive capacity) and 60-digit Decimal working precision. Equality at the boundary is not flagged. This avoids mistaking normal rounding for a discrepancy. It is an **explicit nearest-two-decimal comparison assumption motivated by the maximum displayed precision**, not a newly asserted EIA rounding/formula contract; any future candidate would require source-definition review before being called erroneous. Capacity <= 0 yields an undefined-ratio inventory entry, not division or zero substitution. No arbitrary "large daily change" threshold was introduced.
+
+**Shortfall:** this investigation found **zero confirmed source-data anomalies and no new independent anomaly beyond the one known API pagination issue**. Three-anomaly delivery is still incomplete. It would be misleading to count the 78 component capacity changes as separate defects, count the pagination mismatch separately for each day, or present ordinary outage starts/ends as bad data. The raw percentages, exact reconciliation, stable identifiers, and attribute checks provide no defensible second or third source anomaly in this window.
+
+Concrete percentage checks further illustrate why ordinary rounding is not counted:
+
+| Date / scope | Capacity MW | Outage MW | Reported % | Calculated % (approx.) | Reported minus calculated, percentage points (approx.) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2026-10-19 / national | 100056.7 | 19896.304 | 19.89 | 19.885029188 | +0.004970812 |
+| 2026-09-27 / facility 6026 | 2264.4 | 226.1 | 9.98 | 9.984984985 | -0.004984985 |
+| 2026-09-22 / facility 46, generator 1 | 1227.4 | 1227.4 | 100 | 100 | 0 |
+
+These are maximum absolute percentage gaps at the respective grains, all within the stated interval; generator ratios agree exactly throughout this sample. Exact 60-digit diagnostic ratios/gaps are retained in the temporal summary. They are **not three anomalies**.
+
+A small extension was considered, including a few dates around another seasonal/month boundary. Without an external rating-definition or lifecycle expectation, another coordinated step would still be only a candidate, not proof of an invariant violation; a blind nearby download is not currently justified. **No extension or additional source-data requests were made.** The smallest next evidence is EIA confirmation of capacity basis/effective-date rules (and independently the facility count semantics), or an independently documented specific entity/date inconsistency to target with a small bounded request. Additional dates alone cannot guarantee three genuine anomalies. The [data model and seven design decisions](docs/DATA_MODEL.md) are documented independently of this unresolved requirement.
 
 ## US-08: daily fleet capacity offline
 
