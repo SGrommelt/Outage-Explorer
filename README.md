@@ -40,13 +40,44 @@ From the repository root:
 python3.12 -m venv apps/backend/.venv
 source apps/backend/.venv/bin/activate
 python -m pip install -e './apps/backend[dev]'
-cp apps/backend/.env.example apps/backend/.env
+test -e apps/backend/.env || cp apps/backend/.env.example apps/backend/.env
 python -m uvicorn outage_explorer.main:app --reload --app-dir apps/backend/src
 ```
 
-The API runs at http://127.0.0.1:8000. `GET /health` returns `{"status":"ok"}`. Interactive API docs are at http://127.0.0.1:8000/docs. No environment settings are required or loaded by the backend yet.
+The API runs at http://127.0.0.1:8000. `GET /health` returns `{"status":"ok"}`. Interactive API docs are at http://127.0.0.1:8000/docs. Liveness remains public; authentication requires the local configuration below.
 
 FastAPI, DuckDB, HTTPX, Pandas, PyArrow, Pydantic, and SQLGlot are declared dependencies. SQLite is provided by Python's built-in `sqlite3` module. Uvicorn runs the development server; Pytest is a development extra. No persistent database is initialized; analytical connections use an in-memory DuckDB catalog over existing Parquet files.
+
+## Local authentication and authorization
+
+Create the backend `.env` if it does not already exist, preserving any configured EIA key, then run from the repository root:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.seed_auth
+```
+
+This interactively seeds **development-only test accounts** named `viewer`, `analyst`, and `admin`. Choose and confirm a distinct password of at least 12 characters for each. No default passwords exist, and passwords are never printed or saved in plaintext. The command generates salted PBKDF2-HMAC-SHA256 hashes (600,000 iterations) and a random 256-bit signing key, preserves unrelated `.env` entries, and writes the file with owner-only permissions. It refuses to replace existing configured auth credentials. The real local `.env` is Git-ignored; only `.env.example` is tracked. No credentials are seeded into source code or a database.
+
+Restart the API after setup or configuration changes. `AUTH_SIGNING_KEY` is a 64-character hexadecimal secret, `AUTH_USERS_JSON` contains exactly three hashed accounts (one per role), and `AUTH_TOKEN_SECONDS` defaults to 600 (allowed 60–900). Exported AUTH variables override `.env`; interpolation is disabled. Missing/invalid configuration disables authentication with a generic 503 response while `/health` remains usable.
+
+- `POST /auth/login`: JSON `{"username": "viewer", "password": "<your chosen password>"}` returns `access_token`, `token_type="bearer"`, and `expires_in`. Use the interactive API docs locally rather than putting real passwords in shell history.
+- `GET /auth/me`: send `Authorization: Bearer <access_token>`; returns only username and role. Login/token responses use `Cache-Control: no-store`.
+- Missing, malformed, tampered, expired, future-issued, wrong-key, and unknown-user tokens are rejected with generic **401** responses and a Bearer challenge. Authenticated permission failures return **403**. Validation errors omit submitted inputs to avoid credential echoes.
+
+Tokens use a fixed versioned HMAC-SHA256 format with signed subject, issue/expiry times, and a nonce. Tokens are signed, not encrypted; they contain no password/hash. Roles are resolved from current server configuration, never trusted from token claims. Settings are cached per process, so account/key/role changes take effect after restarting the API. Rotating the signing key invalidates existing tokens. There is no refresh-token or revocation store; issued tokens expire after their short lifetime.
+
+| Capability | Viewer | Analyst | Admin |
+| --- | --- | --- | --- |
+| National analytical dataset | Yes | Yes | Yes |
+| Facility/generator datasets | No | Yes | Yes |
+| Ad hoc SQL capability | No | Yes | Yes |
+| Refresh capability | No | No | Yes |
+
+`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Future catalog routes must authenticate before listing and filter with `allowed_datasets`; preview routes must depend on `require_dataset` before opening a snapshot. SQL routes must require `require_sql` before parsing/executing and authorize every resolved dataset reference, including subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. Future SQL execution still needs its own statement validation and filesystem/function restrictions; this policy helper is not a SQL sandbox. Refresh routes must depend on `require_refresh` before touching data or invoking extraction.
+
+Only login, identity, and public liveness endpoints exist at this stage. Catalog, preview, SQL, and refresh APIs are intentionally deferred. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
+
+This local development foundation has no external identity provider, registration, password reset, or persistent account database. It adds no dependencies. Use HTTPS and deployment-level request/rate limits before exposing login outside a trusted local environment; access tokens are bearer credentials. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_auth.py` for offline authentication/policy tests.
 
 ## Frontend
 
@@ -81,7 +112,7 @@ Environment files, local data, build outputs, and dependencies are ignored by Gi
 
 ## Manual EIA schema exploration
 
-Configure `EIA_API_KEY` in `apps/backend/.env` or export it in your shell. The exploration tool uses python-dotenv to load that specific file without overriding exported values or interpolating variables. The FastAPI application does not load this key or make EIA requests.
+Configure `EIA_API_KEY` in `apps/backend/.env` or export it in your shell. The exploration tool uses python-dotenv to load that specific file without overriding exported values or interpolating variables. The FastAPI application makes no EIA requests; authentication reads only its AUTH settings from local configuration.
 
 From the repository root, with backend dependencies installed:
 
