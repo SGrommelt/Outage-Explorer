@@ -203,6 +203,47 @@ ORDER BY f.outage_date, f.facility_id;
 
 The final query preserves one row per facility-day; a missing child group stays null. Summing reported MW observations across dates is not measured energy, and source percentages are not additive. The offline model tests cover both snapshot manifest versions, types/precision, keys and nullable labels, example query shapes, pointer changes during opening, unreferenced data, schema/publication corruption, and Hive-style/quoted paths. Run them with `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_analytics.py`.
 
+## Reconciliation and anomaly diagnostics
+
+`outage_explorer.diagnostics` queries an existing connection from `open_analytics`. It does not reopen the pointer, repair audits, alter Parquet, or change extraction rules. All results therefore stay on the same published snapshot as the analytical views. Functions return dictionaries/lists with native Python dates and exact `Decimal` measurements; an eventual API must serialize them deliberately without converting decimals to floats.
+
+```python
+from datetime import date
+from outage_explorer.analytics import open_analytics
+from outage_explorer.diagnostics import reconcile_daily, reconcile_facilities, find_anomalies
+
+with open_analytics() as db:
+    start, end = date(2026, 10, 18), date(2026, 10, 20)
+    daily = reconcile_daily(db, start, end)
+    facilities = reconcile_facilities(db, start, end)
+    anomalies = find_anomalies(db, start, end)
+    # To enable change flags, supply a justified Decimal threshold from your policy:
+    # anomalies = find_anomalies(db, start, end,
+    #                           change_threshold_mw=configured_threshold_mw)
+```
+
+All windows are inclusive Python `date` values. `reconcile_daily` compares national observations with independent facility and generator daily sums for both capacity and outage MW. `reconcile_facilities` first aggregates generators to `(outage_date, facility_id)` and full-outer joins to facility observations. This preserves unmatched groups and prevents multiplying a parent measure by its number of generators. Results include counts, exact signed differences, `category='source_comparison'`, and `status` of `equal`, `difference`, or `missing_level`. Delta names state their direction. A missing group/delta remains null, never an invented zero. Entirely absent dates are reported by the coverage check below. Percentages are neither summed nor compared to a derived ratio.
+
+**A cross-level difference is not a confirmed source error.** The retained EIA metadata identifies the source and daily grains but does not establish an exact cross-route reconciliation formula, shared revision timing, complete entity coverage, or rounding rules. Source definition/aggregation/coverage/revision differences are possible explanations, not verified causes or blanket excuses. Exact equality is descriptive; any nonzero difference is retained without an invented tolerance. Missing parent/child groups are comparison findings, since entity lifecycle expectations are unknown. The known 55-versus-95 facility pagination issue remains an extraction failure, not something reconciliation makes acceptable.
+
+`find_anomalies` separates these outputs:
+
+| Result list | Category | Meaning / assumption |
+| --- | --- | --- |
+| `missing_dates` | `data_quality` | A route has no row for a day in the caller's explicitly expected window. At least one row per route-day is the existing ingestion coverage policy. |
+| `invalid_records` | `data_quality` | Missing dates/required identifiers/measures, padded or blank identifiers, or nonfinite measures violate the stored-data contract. Null dates cannot be assigned to a window and are always reported. |
+| `duplicate_keys` | `data_quality` | More than one observation has the same provisional natural key; this violates ingestion's uniqueness policy. |
+| `range_flags` | `review` | Negative capacity/outage, outage greater than capacity, or percent outside 0–100 conflict with conventional physical interpretations. These ranges are NOT verified universal EIA constraints; flags do not reject or correct records. |
+| `large_changes` | `review` | Absolute outage-MW change exceeds an explicitly supplied threshold. No default cutoff or statistical claim of unusualness is applied. |
+
+The expected window is a caller assertion: normally choose dates within the published snapshot's declared coverage. Missing dates outside its coverage do not establish an EIA omission. There is no per-entity missing-date check, because plant/generator commissioning, retirement, and reporting lifecycles are not established. Strict snapshot opening already rejects missing route-days, invalid required data, and duplicate keys; these defensive diagnostics normally return empty quality lists for valid publications. Tests exercise those branches using isolated synthetic in-memory tables rather than relaxing snapshot validation or publishing malformed Parquet.
+
+Change thresholds must be positive, finite `Decimal` values representable in `DECIMAL(24,6)`; floats and implicit rounding are rejected. Equality with the threshold does not flag. Changes partition by source level and full entity identity (including facility for generators), compare only consecutive calendar dates, and exclude invalid or duplicate observations. The previous observation can precede the requested start, avoiding a window-boundary blind spot. Gaps and ambiguous keys are not bridged, and changes are not normalized into percentages or rates. A large change is an inspection candidate, often a real outage/return-to-service event, not evidence of bad data.
+
+The functions use a few local SQL scans and materialize their result lists for the caller. They add no persistent tables, dependencies, alerts, API endpoints, statistical models, or automatic corrections. Use bounded date windows for interactive work. The existing analytical opening-time full-data validation cost and immutable-file/retention assumptions remain unchanged.
+
+Offline coverage includes reconciled totals, micro-MW differences, capacity differences, unmatched groups, missing boundary dates, empty routes, null/nonfinite values, duplicate keys, range flags, threshold boundaries, entity isolation, prior-window observations, reporting gaps, and snapshot pinning. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_diagnostics.py`.
+
 ## Dependency setup notes
 
 Vitest uses the patched 4.1 release line, compatible with the existing Vite 6 and Node 20 setup. Some npm 10 versions crash with `Cannot read properties of null (reading 'edgesOut')` when resolving its optional peer dependencies. Use `npm ci` with the supplied lockfile for normal setup. If updating dependencies triggers this resolver error, use temporary newer tools without changing global installations:
