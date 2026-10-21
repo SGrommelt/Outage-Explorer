@@ -393,6 +393,78 @@ The functions use a few local SQL scans and materialize their result lists for t
 
 Offline coverage includes reconciled totals, micro-MW differences, capacity differences, unmatched groups, missing boundary dates, empty routes, null/nonfinite values, duplicate keys, range flags, threshold boundaries, entity isolation, prior-window observations, reporting gaps, and snapshot pinning. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_diagnostics.py`.
 
+## Real-data reconciliation evidence (US-07)
+
+The isolated `outage_explorer.analysis_eia` workflow covers **2026-09-22 through 2026-10-21 inclusive: 30 consecutive real days**. These are **non-production, completeness-unverified source observations**, not a published snapshot. No production pointers, ingestion audits, watermarks, RBAC, endpoints, or frontend behavior were changed. In particular, this analysis is not permission to publish facility data despite its unresolved count mismatch.
+
+The compact [source evidence](docs/evidence/eia-real-30-days-source.json.gz) is approximately 61 KB compressed and includes exact response bodies, credential-free query parameters, per-response SHA-256 checksums, metadata, API version `2.1.14`, failure history, and collection/resumption timestamps. The [small result summary](docs/evidence/eia-real-30-days-summary.json) records the archive hash, all 30 daily comparisons, route counts, representative facility comparisons, and the explicit anomaly shortfall. Full facility-level output is reproducible locally rather than duplicated in Git. Checksums detect accidental changes; they are not an EIA signature or independent proof of provenance.
+
+Offline reproduction from the repository root requires installed backend dependencies, **no API key and no network**:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.analysis_eia analyse \
+  --input docs/evidence/eia-real-30-days-source.json.gz \
+  --output data/eia-analysis/reproduced/analysis.json
+apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_analysis_eia.py
+```
+
+For a deliberately authorized new collection (not needed for replay), use a fresh evidence filename:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.analysis_eia fetch \
+  --output data/eia-analysis/new-run/source.json.gz
+# Optional --end YYYY-MM-DD fixes the end; otherwise use the minimum of the
+# three advertised latest dates. The start is always 29 days earlier.
+# Resume only missing pages after a failure, preserving the original archive:
+apps/backend/.venv/bin/python -m outage_explorer.analysis_eia fetch \
+  --resume-from data/eia-analysis/new-run/source.json.gz \
+  --output data/eia-analysis/new-run/resumed-source.json.gz
+```
+
+Writes are restricted to a directory named `eia-analysis`; source destinations must be fresh. Production opening/publication functions are never called. Collection uses sequential 1,000-row pages, ascending period plus route identifiers, at most eight pages per route, two attempts per request, existing transient/429/5xx retry/backoff logic, a quarter-second request interval, and a **36-attempt total budget shared across resumptions**. It saves gzip checkpoints after successful responses and failures, keeps original totals, requests an explicit terminal page, and retains safe failures. Exported EIA credentials take precedence over `apps/backend/.env`; no key or request echo is retained. Resume validates saved evidence and uses its original window, skipping already terminated routes. Offset pagination has no source snapshot isolation; later revisions or shifting data can still cause inconsistent evidence.
+
+### Provenance, coverage, and request outcome
+
+Collection started **2026-10-21T20:43:21.751480Z**; the targeted resume started **2026-10-21T20:46:11.439075Z**. A sandbox preflight exhausted six connection attempts without HTTP responses. The permitted collection and resume used **14 network attempts: 12 HTTP 200 responses and two failed network attempts** at the generator continuation after 2,000 rows. One automatic retry was attempted before the targeted resume fetched only the remaining 850 rows and terminal page. The original partial archives remain locally under Git-ignored `data/eia-analysis/real-30-days/`; the retained source archive includes the failure history. Network failures are not empty data pages or source-data anomalies.
+
+| Route | Validated / unique records | Days present | Source-reported total | Returned pages (rows) |
+| --- | ---: | ---: | ---: | --- |
+| National | 30 / 30 | 30 | 30 | 30, 0 |
+| Facility | 1,650 / 1,650 | 30 | 2,850 | 1,000, 650, 0 |
+| Generator | 2,850 / 2,850 | 30 | 2,850 | 1,000, 1,000, 850, 0 |
+
+All received rows pass the existing schema, required-value, units, date-window, exact decimal precision, and natural-key validation. Every date has one national row, 55 facility rows, and 95 generator rows. The facility route remains unresolved: an empty page occurs at offset **1,650**, while its unchanged reported total is **2,850**. This is one API metadata/pagination issue, not 30 or 1,200 independent source-data anomalies. The count-before-aggregation interpretation remains a hypothesis. Row-count agreement on the other routes and cross-route equality do not independently establish complete source coverage.
+
+### Comparison method and concrete results
+
+Offline replay uses the existing `schema_for`/`validate_record`, the fixed analytical `VIEWS` projections in an isolated in-memory DuckDB connection, and `reconcile_daily`, `reconcile_facilities`, and `find_anomalies`. Generators are aggregated to facility/day before comparing to facility rows. Each source grain is aggregated independently by day, never combined into a mixed-grain total. Percentages are not summed. All capacity/outage arithmetic and gaps use Decimal values. The daily output adds generator-minus-facility capacity/outage gaps alongside the existing national-relative gaps, so all three pairs are explicit.
+
+**All 30 daily comparisons and all 1,650 facility-day comparisons are exactly equal for both capacity and outage MW.** Every pairwise gap is `0.000000` MW; there are no unmatched facility/generator groups. Representative actual observations follow; each parenthesized pair is **(capacity MW, outage MW)**:
+
+| Date | National reported | Facility sum | Generator sum | All pairwise MW gaps |
+| --- | --- | --- | --- | --- |
+| 2026-09-22 | (97620.500000, 7745.638000) | (97620.500000, 7745.638000) | (97620.500000, 7745.638000) | 0.000000 |
+| 2026-10-06 | (100056.700000, 15268.765000) | (100056.700000, 15268.765000) | (100056.700000, 15268.765000) | 0.000000 |
+| 2026-10-21 | (100056.700000, 19936.436000) | (100056.700000, 19936.436000) | (100056.700000, 19936.436000) | 0.000000 |
+
+| Date | Facility ID | Generators | Facility capacity = generator sum MW | Facility outage = generator sum MW | Capacity / outage gaps MW |
+| --- | --- | ---: | ---: | ---: | --- |
+| 2026-09-22 | 46 | 3 | 3661.700000 | 1227.400000 | 0.000000 / 0.000000 |
+| 2026-10-06 | 6008 | 3 | 4003.000000 | 1333.000000 | 0.000000 / 0.000000 |
+| 2026-10-21 | 3166 | 2 | 2694.100000 | 1346.700000 | 0.000000 / 0.000000 |
+
+These are **reconciled examples, not anomalies**. The observed equality is consistent with compatible aggregation, but shared source omissions, definitions, or revisions remain possible. No actual nonzero reconciliation gap was found to explain away. Fleet capacity changes from `97620.500000` MW on September 30 to `100056.700000` MW on October 1, a `2436.200000` MW increase consistently present at all three grains. The reason is not established; capacity-rating updates or population changes are hypotheses. A change alone violates no verified invariant, so it is not presented as a confirmed anomaly.
+
+### Anomaly evidence and explicit shortfall
+
+**Zero source-data anomalies were observed under the implemented checks; the requirement for three genuine anomalies is not met.** The replay finds zero missing route dates, invalid required records, duplicate natural keys, negative capacity/outage values, outage-above-capacity values, or percentages outside 0–100. No capacity/outage reconciliation differences or unmatched groups were found. This describes only these 4,530 received observations and the documented rules, not the entire EIA history or the unverified population behind the facility total.
+
+The one verified API issue is the facility `total=2850` / 1,650 returned rows / empty offset-1650 page. Diagnostic handling retains the original responses, records the unresolved completeness flag, and labels every result non-production. Production ingestion still rejects it and never advances watermarks or publishes it. The temporary generator coverage gap from network failure was fixed by resume and is not counted as an EIA anomaly.
+
+Ordinary source rounding is not treated as an anomaly. Automatic large-change checks were deliberately not enabled without a justified operational baseline or threshold; normal shutdown/restart transitions are not automatically data errors. The product's existing diagnostic range rules flag candidates as `review`, not proven source defects. Invalid records would withhold this workflow's reconciliation rather than silently skip or deduplicate them. Published-snapshot validators and the fleet-share calculation retain their existing rejection/null-status behavior.
+
+The smallest follow-up is to agree an independently justified anomaly definition or an earlier bounded period with externally evidenced unusual observations, then run the same workflow—not invent three examples from this internally consistent window. EIA clarification of facility count/grain semantics is separately still needed for trustworthy production publication. The retained source and summary allow every stated value and zero-anomaly result to be reproduced offline.
+
 ## US-08: daily fleet capacity offline
 
 **US-08:** “As an Analyst, I want the share of total fleet capacity offline per day, ready-made.”
