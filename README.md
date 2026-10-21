@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, and local date-window extraction command. Database-backed querying and outage analysis are not implemented.
+A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Analytical API endpoints and the SQL Explorer UI are not implemented.
 
 ## Layout
 
@@ -12,6 +12,8 @@ apps/
       main.py             # FastAPI app
       explore_eia.py      # Bounded schema probe
       extract_eia.py      # Validated Parquet snapshot extraction
+      refresh_eia.py      # Incremental refresh and ingestion audits
+      analytics.py        # DuckDB views over one published snapshot
     tests/                # Offline API and extraction tests
     pyproject.toml        # Python package and dependencies
   frontend/
@@ -44,7 +46,7 @@ python -m uvicorn outage_explorer.main:app --reload --app-dir apps/backend/src
 
 The API runs at http://127.0.0.1:8000. `GET /health` returns `{"status":"ok"}`. Interactive API docs are at http://127.0.0.1:8000/docs. No environment settings are required or loaded by the backend yet.
 
-FastAPI, DuckDB, HTTPX, Pandas, PyArrow, Pydantic, and SQLGlot are declared dependencies. SQLite is provided by Python's built-in `sqlite3` module. Uvicorn runs the development server; Pytest is a development extra. No database is initialized.
+FastAPI, DuckDB, HTTPX, Pandas, PyArrow, Pydantic, and SQLGlot are declared dependencies. SQLite is provided by Python's built-in `sqlite3` module. Uvicorn runs the development server; Pytest is a development extra. No persistent database is initialized; analytical connections use an in-memory DuckDB catalog over existing Parquet files.
 
 ## Frontend
 
@@ -128,6 +130,78 @@ apps/backend/.venv/bin/python -m outage_explorer.refresh_eia --end 2026-10-21 --
 Output defaults to `data/eia/incremental`. Identical overlap rows merge once; conflicting values fail unless `--conflict-policy replace` is explicitly selected. All three datasets and watermarks publish through one atomic pointer update. Failed attempts retain audit metadata without advancing watermarks. The known facility total discrepancy still blocks publication; no completeness bypass was added and no live refresh was run.
 
 See [docs/EIA_INCREMENTAL_REFRESH.md](docs/EIA_INCREMENTAL_REFRESH.md) for legacy snapshot adoption, replacement policy, output layout, recovery, and limits. The original extraction command retains its independent date-window behavior.
+
+## DuckDB analytical model
+
+The smallest model is three independent fact views. There are no copied data tables, inferred dimension tables, automatic joins, or new dependencies. Open a connection from the repository root with the installed backend:
+
+```sh
+apps/backend/.venv/bin/python - <<'PYTHON'
+from pathlib import Path
+from outage_explorer.analytics import open_analytics
+
+with open_analytics(Path("data/eia/incremental")) as db:
+    print(db.execute("SELECT * FROM national_outages ORDER BY outage_date LIMIT 10").fetchall())
+PYTHON
+```
+
+The default root is `data/eia/incremental`; an explicitly supplied legacy date-window directory containing `current.json` also works. A complete published snapshot is required. The documented live facility discrepancy still prevents the affected real window from being opened; synthetic tests do not establish that real data are complete.
+
+| View | Grain / provisional natural key | Additional columns |
+| --- | --- | --- |
+| `national_outages` | `outage_date` | None |
+| `facility_outages` | `(outage_date, facility_id)` | `facility_id`, `facility_name` |
+| `generator_outages` | `(outage_date, facility_id, generator_id)` | `facility_id`, `generator_id`, `facility_name` |
+
+Every view exposes `outage_date` (`DATE`), `capacity_mw`, `outage_mw`, and `percent_outage` (each `DECIMAL(24,6)`). Identifiers are opaque `VARCHAR` values, preserving leading zeros and letters. `facility_name` remains a nullable display label. The projection renames source fields without casts or rounding. Validated source units are encoded by the measure names: megawatts and percent, where 2 means 2%, not 0.02. No unverified ratio or aggregate replaces EIA's reported percentage. These views do not declare SQL primary/foreign-key constraints; ingestion validates provisional key uniqueness.
+
+Relationships are daily: facility observations relate to national observations by `outage_date`, and generator observations relate to facilities by `(outage_date, facility_id)`. A generator ID alone is not globally unique. Names are not join keys or stable dimensions. Cross-route entity coverage and reconciliation of totals are not proven. National measurements remain their own source observations, rather than sums reconstructed from facility or generator rows. Do not combine all three grains into one total, sum percentages, or sum parent measures after joining children. Aggregate each child dataset to the parent key before comparisons; no automatic join is built into the model.
+
+Opening validates all three physical Parquet schemas, rows, keys, counts, daily coverage, and (for incremental snapshots) embedded publication metadata using the existing snapshot reader. `AnalyticsError` reports missing publications, incompatible schemas, or invalid snapshots; no partial connection is returned. Validation scans the existing datasets in memory, but writes no data, audits, or catalog files. Views subsequently scan explicit immutable Parquet paths with Hive partition inference disabled. They never glob staging files, orphan runs, or historical versions.
+
+The pointer is resolved once per connection. Publication during or after opening cannot mix versions: the existing connection stays pinned to its validated run. Open a new connection to observe a newly published snapshot. This relies on the existing contract that published files are immutable and old runs are retained; manual edits/deletion remain unsupported. The helper owns a fresh in-memory catalog; close it after use. It provides local model access only; SQL Explorer execution policy and API lifecycle integration are future work.
+
+Example SQL for a chosen snapshot (dates below are illustrative):
+
+```sql
+-- National outage trend: preserve reported percentage and exact daily measures.
+SELECT outage_date, capacity_mw, outage_mw, percent_outage
+FROM national_outages
+WHERE outage_date BETWEEN DATE '2026-10-18' AND DATE '2026-10-20'
+ORDER BY outage_date;
+
+-- Facilities ranked by their largest reported daily outage in the window.
+-- Group by identity, so display-name changes do not split a facility.
+SELECT facility_id, MAX(outage_mw) AS peak_outage_mw
+FROM facility_outages
+WHERE outage_date BETWEEN DATE '2026-10-18' AND DATE '2026-10-20'
+GROUP BY facility_id
+ORDER BY peak_outage_mw DESC, facility_id
+LIMIT 10;
+
+-- Generator breakdown for a single facility and day.
+SELECT facility_id, generator_id, facility_name,
+       capacity_mw, outage_mw, percent_outage
+FROM generator_outages
+WHERE outage_date = DATE '2026-10-20' AND facility_id = '46'
+ORDER BY generator_id;
+
+-- Compare source levels only after reducing generators to the facility-day key.
+-- Differences are diagnostic, not proof that either source level is incorrect.
+WITH generators_by_facility AS (
+    SELECT outage_date, facility_id, COUNT(*) AS generator_count,
+           SUM(outage_mw) AS generator_outage_mw
+    FROM generator_outages
+    GROUP BY outage_date, facility_id
+)
+SELECT f.outage_date, f.facility_id, f.outage_mw AS facility_outage_mw,
+       g.generator_count, g.generator_outage_mw
+FROM facility_outages AS f
+LEFT JOIN generators_by_facility AS g USING (outage_date, facility_id)
+ORDER BY f.outage_date, f.facility_id;
+```
+
+The final query preserves one row per facility-day; a missing child group stays null. Summing reported MW observations across dates is not measured energy, and source percentages are not additive. The offline model tests cover both snapshot manifest versions, types/precision, keys and nullable labels, example query shapes, pointer changes during opening, unreferenced data, schema/publication corruption, and Hive-style/quoted paths. Run them with `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_analytics.py`.
 
 ## Dependency setup notes
 
