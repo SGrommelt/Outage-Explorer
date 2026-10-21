@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { SessionProvider, useSession } from "@/components/session";
 import { Button } from "@/components/ui/button";
 import { Datasets } from "@/components/datasets";
+import { Refresh } from "@/components/refresh";
+import { FleetShare } from "@/components/fleet-share";
 import { SqlExplorer } from "@/components/sql-explorer";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +36,14 @@ function Login() {
   </main>;
 }
 
-type Section = "datasets" | "sql" | "refresh";
+type Section = "datasets" | "sql" | "refresh" | "fleet";
 function Shell() {
   const { user, logout } = useSession();
   const [section, setSection] = useState<Section>("datasets");
   if (!user) return <Login />;
   const navigation: { id: Section; label: string }[] = [
     { id: "datasets", label: user.role === "viewer" ? "National datasets" : "Datasets" },
+    { id: "fleet", label: "Fleet offline share" },
     ...(user.role !== "viewer" ? [{ id: "sql" as const, label: "SQL Explorer" }] : []),
     ...(user.role === "admin" ? [{ id: "refresh" as const, label: "Refresh" }] : []),
   ];
@@ -60,7 +63,7 @@ function Shell() {
       <main className="min-w-0 rounded-xl border border-slate-200 bg-white p-6 sm:p-9">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Workspace</p>
         <h1 className="mt-3 text-2xl font-semibold">{active.label}</h1>
-        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : <p className="mt-4 text-slate-600">Admin data refresh and job status will be available here in a future step.</p>}
+        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : active.id === "fleet" ? <FleetShare /> : user.role === "admin" ? <Refresh /> : null}
       </main>
     </div>
   </div>;

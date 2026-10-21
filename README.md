@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application, with a liveness API, React login and role-aware application shell, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; Admin refresh jobs are available; the frontend includes authorized dataset previews and a restricted SQL Explorer.
+A minimal monorepo for an outage exploration application, with a liveness API, React login and role-aware application shell, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; Admin refresh jobs are available; the frontend includes authorized dataset previews, a restricted SQL Explorer, Admin refresh controls, and the national daily offline-share metric.
 
 ## Layout
 
@@ -13,6 +13,7 @@ apps/
       api/datasets.py     # Authorized catalog and paginated previews
       api/query.py        # Validated single-dataset read-only SQL
       api/refresh.py      # Admin-only asynchronous refresh/status
+      api/metrics.py      # Authenticated national fleet offline share
       refresh_jobs.py     # In-process refresh worker and safe job results
       main.py             # FastAPI app
       explore_eia.py      # Bounded schema probe
@@ -196,13 +197,19 @@ Start the backend too using the instructions above, and seed the **development-o
 
 Tokens stay in memory only: reloads, tab closes, and logout require signing in again. The client clears its query cache on logout or expiry, schedules expiry from the login response, and centrally handles authenticated HTTP 401 responses. Login failures, backend/network failures, and expired sessions have separate user messages. A network error during identity verification leaves the workspace locked and permits another sign-in attempt. Logout clears the local token; it does not revoke an already issued backend token before its short expiry. Use HTTPS outside local development; never put secrets in browser-visible `VITE_*` settings.
 
-The protected shell shows National datasets to Viewer, Datasets and SQL Explorer to Analyst, and those sections plus Refresh to Admin. Refresh remains a placeholder. The backend remains the authorization boundary; hidden navigation grants no security permissions.
+The protected shell shows National datasets and Fleet offline share to Viewer, adds SQL Explorer for Analyst, and adds Refresh for Admin. The backend remains the authorization boundary; hidden navigation grants no security permissions.
 
 In **Datasets**, select an authorized catalog entry to inspect its description, columns, and DuckDB types. Previews use server-side pagination (50 rows by default; selectable up to 200), with the filtered total and Previous/Next controls. Date bounds are inclusive; facility and generator datasets accept an exact facility ID. Changing datasets resets filters and pagination; changing any filter resets the page. National previews have no facility filter. Decimal strings, dates, identifiers, and nulls retain their API representation; numeric strings are not converted to JavaScript numbers. Filters update immediately without a debounce. Rows are hidden while the current request loads or fails. Each page is a separate backend request and can observe a newer published snapshot.
 
 In **SQL Explorer**, use the example from an authorized catalog dataset or enter one SELECT against one dataset, selecting `*` or named columns with optional WHERE, ORDER BY, and LIMIT. The actual server subset supports basic comparisons, boolean combinations, LIKE, IN, BETWEEN, IS NULL, and DATE literals; joins, subqueries, aliases, functions, aggregation, and writes are rejected. Run the query to see typed result columns, returned row count, and whether the server's 200-row cap truncated results. Editing SQL clears previous results. There is no editor autocomplete or query history. Dataset, query, and cached session data are cleared on logout or expiry. Both interfaces surface safe validation, permission, network, and unavailable-snapshot messages; a valid complete local snapshot is required.
 
 React, TypeScript, Vite, Tailwind CSS, TanStack Query, TanStack Table, Monaco Editor, and Recharts are configured or installed. QueryClientProvider is wired at the entry point. Tables, editor, and charts remain unused until features require them. shadcn/ui uses source-owned components rather than a runtime package; `components.json`, aliases, and the `cn` helper are ready for generating components into `src/components/ui`.
+
+In **Refresh** (Admin only), enter an end date, an initial start date for the first publication, and the overlap length (default 7 days). Later runs derive their start from watermarks. The UI always uses the existing `reject` conflict policy. Start refresh submits once, displays the job ID, and polls status every two seconds while pending/running. Terminal status stops polling; timestamps, fetched/final row counts, publication/no-op outcome, and sanitized errors are displayed. A 409 means another job is active and no new job was admitted. A status-network failure pauses polling; use **Retry status** to resume. A failed start response may have occurred after admission: do not assume it cancelled the server job. Check the local audit if no job ID was received.
+
+Leaving Refresh, logging out, or reloading stops client polling and clears the locally tracked job; it does **not** cancel server work. Copy the job ID to inspect it with the status API example above if needed. There is no persisted browser job history. Server restarts lose API job IDs; pipeline audits remain durable as described above. Expired authentication hides all job details and requires login again. The known EIA facility total mismatch can still make a real refresh fail; completeness and atomic publication remain strict.
+
+In **Fleet offline share** (all three roles), choose an inclusive date window of at most 366 days and load the metric. The accessible daily bar trend uses a fixed 0–100% scale, with exact server-returned decimal percentages beside each date and a full date/MW/percentage/status table. Only bar widths use approximate JavaScript numbers; the calculation remains on the backend. Missing/invalid days are explicit gaps, never zero-filled. A complete local snapshot is required; missing or incompatible snapshots show an unavailable message. Editing dates or changing accounts clears previous results. This metric has no facility or generator output.
 
 ## Checks
 
@@ -405,11 +412,20 @@ with open_analytics() as db:
     rows = daily_fleet_offline_share(db, date(2026, 10, 18), date(2026, 10, 20))
 ```
 
+The authenticated API exposes the existing calculation through `GET /metrics/fleet-offline-share?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`:
+
+```sh
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  'http://127.0.0.1:8000/metrics/fleet-offline-share?start_date=2026-10-18&end_date=2026-10-20'
+```
+
+The response is `{ "rows": [...] }`, with the fields below; dates and Decimal values are strings and unavailable values are JSON null. All three roles are authorized through the existing `national_outages` policy, checked before opening the pinned snapshot. Missing/invalid authentication returns 401, invalid/missing dates or windows longer than 366 inclusive days return 400, and unavailable/incompatible publications return a generic 503. No raw source paths, snapshot metadata, or lower-grain identifiers are returned. Production snapshot validation can reject malformed source records before the calculation runs; defensive calculation statuses do not bypass that validation.
+
 The function returns exactly one result for each requested inclusive date: `outage_date`, `total_fleet_capacity_mw`, `offline_capacity_mw`, `fleet_offline_share_pct`, and `status`. MW inputs preserve source Decimal precision. The percentage uses Decimal arithmetic with 60-digit working precision and explicit half-even rounding to six fractional percentage-point digits; DuckDB's floating-point division is not used. Thus 100 MW offline out of 300 MW returns `33.333333` percent. Rounded percentages may display 0 or 100 for values very near those endpoints. EIA's separately reported `percentOutage` is not substituted for the required formula or forced to match it.
 
 A share is returned only for finite inputs with `capacity > 0` and `0 <= outage <= capacity` (`status='ok'`). This is the metric's interpretation policy, not a new extraction rule. Zero capacity and zero outage retain zero MW but yield a null share (`zero_capacity`), never 0% for 0/0. `missing_values`, `unsupported_values` (negative/nonfinite), and `inconsistent_values` (outage greater than capacity, including positive outage at zero capacity) also yield null shares; unsupported numeric totals are withheld. Duplicate days yield one `duplicate_key` result with both totals and share withheld rather than arbitrarily selecting or summing records. Missing days yield one `missing_date` result with null totals/share; this means absent from the local snapshot, not a proven EIA omission.
 
-The existing `offline_capacity(db, start, end, level="national")` remains available for national, facility, or generator MW observations and the conditional `available_capacity_mw = capacity_mw - outage_mw` residual. Available capacity is not measured generation or guaranteed dispatchable output. Neither helper combines source grains, infers fully offline-reactor counts, sums MW across dates as energy, or reopens the snapshot pointer. Decimal/date serialization for an eventual API must be deliberate.
+The existing `offline_capacity(db, start, end, level="national")` remains available for national, facility, or generator MW observations and the conditional `available_capacity_mw = capacity_mw - outage_mw` residual. Available capacity is not measured generation or guaranteed dispatchable output. Neither helper combines source grains, infers fully offline-reactor counts, sums MW across dates as energy, or reopens the snapshot pointer. The metric API serializes Decimal values and dates explicitly as strings.
 
 Strict snapshot opening normally rejects null/nonfinite values and duplicate keys. Synthetic Parquet tests cover the formula, varying dates, level isolation, zero/full/partial outages, large decimals and rounding; isolated in-memory faults exercise defensive statuses and missing/duplicate days. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_capacity.py`. No source fields, dependencies, or extraction policies were added. The known facility completeness discrepancy still blocks the affected full three-route snapshot, even when querying only the national metric.
 
