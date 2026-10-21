@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; Admin refresh jobs are available; the SQL Explorer UI is not implemented.
+A minimal monorepo for an outage exploration application, with a liveness API, React login and role-aware application shell, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; Admin refresh jobs are available; the SQL Explorer UI is not implemented.
 
 ## Layout
 
@@ -190,7 +190,13 @@ cp apps/frontend/.env.example apps/frontend/.env
 npm run dev
 ```
 
-Open the URL printed by Vite (normally http://localhost:5173). The development proxy forwards `/api/*` to the local backend, so `/api/health` reaches `/health`. `VITE_API_BASE_URL` reserves the API base URL for future frontend requests; the starter page makes no requests. For production, configure an equivalent reverse proxy or the future client's API base URL.
+Open the URL printed by Vite (normally http://localhost:5173). The development proxy forwards `/api/*` to the local backend, so `/api/health` reaches `/health`. `VITE_API_BASE_URL` configures the client API base (default `/api`, without a trailing slash). Restart Vite after changing it. For production, configure an equivalent same-origin reverse proxy. An absolute cross-origin URL requires an explicit backend CORS policy; the backend currently has none.
+
+Start the backend too using the instructions above, and seed the **development-only** `viewer`, `analyst`, and `admin` accounts using the existing `seed_auth` command. Sign in using the passwords you configured; there are no default or frontend-embedded passwords. Login calls `POST /auth/login`, then `GET /auth/me` before opening the workspace. Authentication works without a published data snapshot.
+
+Tokens stay in memory only: reloads, tab closes, and logout require signing in again. The client clears its query cache on logout or expiry, schedules expiry from the login response, and centrally handles authenticated HTTP 401 responses. Login failures, backend/network failures, and expired sessions have separate user messages. A network error during identity verification leaves the workspace locked and permits another sign-in attempt. Logout clears the local token; it does not revoke an already issued backend token before its short expiry. Use HTTPS outside local development; never put secrets in browser-visible `VITE_*` settings.
+
+The protected shell shows National datasets to Viewer, Datasets and SQL Explorer to Analyst, and those sections plus Refresh to Admin. These are placeholders only: tables, SQL execution, and refresh controls are not implemented yet. The backend remains the authorization boundary; hidden navigation grants no security permissions.
 
 React, TypeScript, Vite, Tailwind CSS, TanStack Query, TanStack Table, Monaco Editor, and Recharts are configured or installed. QueryClientProvider is wired at the entry point. Tables, editor, and charts remain unused until features require them. shadcn/ui uses source-owned components rather than a runtime package; `components.json`, aliases, and the `cn` helper are ready for generating components into `src/components/ui`.
 
