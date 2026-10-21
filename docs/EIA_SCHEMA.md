@@ -106,4 +106,4 @@ Missing credentials, connection/DNS/timeouts, non-200 statuses (including redire
 - Full facet catalogs, plant/generator lifecycle history, geographic attributes, and publication/revision schedules were not fetched or inferred.
 - The root cause of intermittent pooled-connection timeouts remains unproven; fresh connections worked for the retained run.
 
-No production schema, database tables, extraction pipeline, or full dataset was created.
+No production schema, database tables, extraction pipeline, or full dataset was created during this exploration stage. The subsequent [local extraction implementation and live validation](EIA_EXTRACTION.md) found that the facility route returned 55 rows for 2026-10-20 while reporting a total of 95; that mismatch prevents publication under the extractor's strict completeness policy.

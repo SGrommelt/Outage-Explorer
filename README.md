@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application. This scaffold contains a liveness API and a React starter page; no outage ingestion, database schema, query execution, or other business logic is implemented.
+A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, and local date-window extraction command. Database-backed querying and outage analysis are not implemented.
 
 ## Layout
 
@@ -10,7 +10,9 @@ apps/
     src/outage_explorer/
       api/health.py       # GET /health
       main.py             # FastAPI app
-    tests/                # Pytest smoke tests
+      explore_eia.py      # Bounded schema probe
+      extract_eia.py      # Validated Parquet snapshot extraction
+    tests/                # Offline API and extraction tests
     pyproject.toml        # Python package and dependencies
   frontend/
     src/
@@ -94,6 +96,23 @@ See [docs/EIA_SCHEMA.md](docs/EIA_SCHEMA.md) for verified observations and limit
 ```sh
 apps/backend/.venv/bin/python -m pytest apps/backend/tests
 ```
+
+## Local EIA extraction
+
+With the backend installed and `EIA_API_KEY` configured as above, run from the repository root:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.extract_eia \
+  --start 2026-10-20 --end 2026-10-20 --page-size 25
+```
+
+Dates are inclusive and required. The command extracts national, facility, and generator rows with bounded pages, deterministic sorting, validation, and bounded exponential retries. It stages typed Parquet files and publishes a complete three-route snapshot through `data/eia/<start>_<end>/current.json`. Repeat runs replace the current snapshot pointer rather than appending records. Readers must resolve that pointer once and use that immutable run; do not glob across runs or overlapping date windows.
+
+**Live validation found an upstream completeness issue:** for October 20, EIA returned 55 facility rows but advertised 95. National (1 row) and generator (95 rows) validated. The command correctly exits 1 and publishes nothing for this window. This limitation is not bypassed, and no full historical extraction has been run.
+
+See [docs/EIA_EXTRACTION.md](docs/EIA_EXTRACTION.md) for output layout, schemas, retry options, failure guarantees, live results, and limitations.
+
+The [completed pagination investigation](docs/EIA_PAGINATION_INVESTIGATION.md) independently reproduces the facility mismatch and distinguishes verified evidence from unresolved hypotheses. Its recorded-response regression runs offline; validation has not been weakened.
 
 ## Dependency setup notes
 

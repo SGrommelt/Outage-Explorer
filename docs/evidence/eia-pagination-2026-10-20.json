@@ -1,0 +1,3175 @@
+{
+  "boundary_probes": [],
+  "cases": {
+    "facility_100_asc": {
+      "canonical_rows_sha256": "bf020d7ea44d13b237312708692706eb30e744feba88cc5e086a609993b56f6d",
+      "empty_terminal_page": true,
+      "facility_filter": null,
+      "facility_ids": [
+        "1715",
+        "1729",
+        "1922",
+        "1925",
+        "204",
+        "210",
+        "2410",
+        "2589",
+        "3166",
+        "3251",
+        "3265",
+        "371",
+        "3806",
+        "4046",
+        "4270",
+        "46",
+        "566",
+        "6000",
+        "6001",
+        "6008",
+        "6011",
+        "6014",
+        "6015",
+        "6020",
+        "6022",
+        "6023",
+        "6026",
+        "6036",
+        "6038",
+        "6040",
+        "6045",
+        "6051",
+        "6072",
+        "6099",
+        "6103",
+        "6105",
+        "6110",
+        "6115",
+        "6118",
+        "6122",
+        "6127",
+        "6145",
+        "6149",
+        "6152",
+        "6153",
+        "6168",
+        "621",
+        "6251",
+        "6462",
+        "649",
+        "7722",
+        "8036",
+        "8055",
+        "869",
+        "880"
+      ],
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 100,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 12,
+          "returned": 55,
+          "total": "95"
+        },
+        {
+          "offset": 55,
+          "request_index": 13,
+          "returned": 0,
+          "total": "95"
+        }
+      ],
+      "route": "facility-nuclear-outages",
+      "rows": 55,
+      "sort_direction": "asc",
+      "unique_keys": 55
+    },
+    "facility_10_asc": {
+      "canonical_rows_sha256": "7838c7a9c8586f43937a1e9e6b9bd4e315a09f1e9b5333cfd57f04318f649806",
+      "empty_terminal_page": false,
+      "facility_filter": null,
+      "facility_ids": [
+        "1715",
+        "1729",
+        "1922",
+        "1925",
+        "204",
+        "210",
+        "2410",
+        "2589",
+        "3166",
+        "3251",
+        "3265",
+        "371",
+        "3806",
+        "4046",
+        "46",
+        "566",
+        "621",
+        "649",
+        "869",
+        "880"
+      ],
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 10,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 6,
+          "returned": 10,
+          "total": "95"
+        },
+        {
+          "offset": 10,
+          "request_index": 7,
+          "returned": 10,
+          "total": "95"
+        }
+      ],
+      "route": "facility-nuclear-outages",
+      "rows": 20,
+      "sort_direction": "asc",
+      "unique_keys": 20
+    },
+    "facility_25_asc": {
+      "canonical_rows_sha256": "23cdaa9ab174eb41f45cb66f6047c6be2b1ca5dbb42c9c30edb87ffb13dfdbed",
+      "empty_terminal_page": false,
+      "facility_filter": null,
+      "facility_ids": [
+        "1715",
+        "1729",
+        "1922",
+        "1925",
+        "204",
+        "210",
+        "2410",
+        "2589",
+        "3166",
+        "3251",
+        "3265",
+        "371",
+        "3806",
+        "4046",
+        "4270",
+        "46",
+        "566",
+        "6000",
+        "6001",
+        "6008",
+        "6011",
+        "6014",
+        "6015",
+        "6020",
+        "6022",
+        "6023",
+        "6026",
+        "6036",
+        "6038",
+        "6040",
+        "6045",
+        "6051",
+        "6072",
+        "6099",
+        "6103",
+        "6105",
+        "6110",
+        "6115",
+        "6118",
+        "6122",
+        "6127",
+        "6145",
+        "6149",
+        "6152",
+        "6153",
+        "6168",
+        "621",
+        "649",
+        "869",
+        "880"
+      ],
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 25,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 3,
+          "returned": 25,
+          "total": "95"
+        },
+        {
+          "offset": 25,
+          "request_index": 4,
+          "returned": 25,
+          "total": "95"
+        }
+      ],
+      "route": "facility-nuclear-outages",
+      "rows": 50,
+      "sort_direction": "asc",
+      "unique_keys": 50
+    },
+    "facility_25_desc": {
+      "canonical_rows_sha256": "d5be0ae985e585c823cc05c0befbccb77162fc3a2e8409ddb2496d6927e0f1e2",
+      "empty_terminal_page": false,
+      "facility_filter": null,
+      "facility_ids": [
+        "1715",
+        "1729",
+        "1922",
+        "1925",
+        "2410",
+        "2589",
+        "3166",
+        "3251",
+        "3265",
+        "3806",
+        "4046",
+        "4270",
+        "6000",
+        "6001",
+        "6008",
+        "6011",
+        "6014",
+        "6015",
+        "6020",
+        "6022",
+        "6023",
+        "6026",
+        "6036",
+        "6038",
+        "6040",
+        "6045",
+        "6051",
+        "6072",
+        "6099",
+        "6103",
+        "6105",
+        "6110",
+        "6115",
+        "6118",
+        "6122",
+        "6127",
+        "6145",
+        "6149",
+        "6152",
+        "6153",
+        "6168",
+        "621",
+        "6251",
+        "6462",
+        "649",
+        "7722",
+        "8036",
+        "8055",
+        "869",
+        "880"
+      ],
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 25,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 9,
+          "returned": 25,
+          "total": "95"
+        },
+        {
+          "offset": 25,
+          "request_index": 10,
+          "returned": 25,
+          "total": "95"
+        }
+      ],
+      "route": "facility-nuclear-outages",
+      "rows": 50,
+      "sort_direction": "desc",
+      "unique_keys": 50
+    },
+    "facility_46": {
+      "canonical_rows_sha256": "f7d093c53b85fa84dc68134c01ab96adcdc86de56db50f2866e0db244d467217",
+      "empty_terminal_page": true,
+      "facility_filter": "46",
+      "facility_ids": [
+        "46"
+      ],
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 10,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 20,
+          "returned": 1,
+          "total": "3"
+        },
+        {
+          "offset": 1,
+          "request_index": 21,
+          "returned": 0,
+          "total": "3"
+        }
+      ],
+      "route": "facility-nuclear-outages",
+      "rows": 1,
+      "sort_direction": "asc",
+      "unique_keys": 1
+    },
+    "facility_capacity_only": {
+      "canonical_rows_sha256": "b7416f5a4ed5d3df11afd622ea59c94b04138e3e3ecea1629c72a59b69580e88",
+      "empty_terminal_page": false,
+      "facility_filter": null,
+      "facility_ids": [
+        "1715",
+        "1729",
+        "1922",
+        "1925",
+        "204",
+        "210",
+        "2410",
+        "2589",
+        "3166",
+        "3251",
+        "3265",
+        "371",
+        "3806",
+        "4046",
+        "4270",
+        "46",
+        "566",
+        "6000",
+        "6001",
+        "6008",
+        "6011",
+        "6014",
+        "6015",
+        "6020",
+        "6022",
+        "6023",
+        "6026",
+        "6036",
+        "6038",
+        "6040",
+        "6045",
+        "6051",
+        "6072",
+        "6099",
+        "6103",
+        "6105",
+        "6110",
+        "6115",
+        "6118",
+        "6122",
+        "6127",
+        "6145",
+        "6149",
+        "6152",
+        "6153",
+        "6168",
+        "621",
+        "6251",
+        "6462",
+        "649",
+        "7722",
+        "8036",
+        "8055",
+        "869",
+        "880"
+      ],
+      "measures": [
+        "capacity"
+      ],
+      "page_size": 100,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 24,
+          "returned": 55,
+          "total": "95"
+        }
+      ],
+      "route": "facility-nuclear-outages",
+      "rows": 55,
+      "sort_direction": "asc",
+      "unique_keys": 55
+    },
+    "generator_25_asc": {
+      "canonical_rows_sha256": "0ce4b8edee8e11ef8a9cbf9e91dbe8672cc82c0f3e7d472fe14dc14cb58c2e63",
+      "empty_terminal_page": false,
+      "facility_filter": null,
+      "facility_ids": [
+        "1715",
+        "1729",
+        "1922",
+        "1925",
+        "204",
+        "210",
+        "2410",
+        "2589",
+        "3166",
+        "3251",
+        "3265",
+        "371",
+        "3806",
+        "4046",
+        "4270",
+        "46",
+        "566",
+        "6000",
+        "6001",
+        "6008",
+        "6011",
+        "6014",
+        "6015",
+        "6020",
+        "6022",
+        "6023",
+        "6026",
+        "6036",
+        "6038",
+        "6040",
+        "6045",
+        "6051",
+        "6072",
+        "6099",
+        "6103",
+        "6105",
+        "6110",
+        "621",
+        "649",
+        "869",
+        "880"
+      ],
+      "generator_counts_by_facility": {
+        "1715": 1,
+        "1729": 1,
+        "1922": 1,
+        "1925": 2,
+        "204": 1,
+        "210": 1,
+        "2410": 2,
+        "2589": 2,
+        "3166": 2,
+        "3251": 1,
+        "3265": 3,
+        "371": 1,
+        "3806": 2,
+        "4046": 2,
+        "4270": 1,
+        "46": 3,
+        "566": 2,
+        "6000": 2,
+        "6001": 2,
+        "6008": 3,
+        "6011": 2,
+        "6014": 2,
+        "6015": 1,
+        "6020": 1,
+        "6022": 2,
+        "6023": 2,
+        "6026": 2,
+        "6036": 2,
+        "6038": 2,
+        "6040": 2,
+        "6045": 2,
+        "6051": 2,
+        "6072": 1,
+        "6099": 2,
+        "6103": 2,
+        "6105": 2,
+        "6110": 1,
+        "621": 2,
+        "649": 4,
+        "869": 2,
+        "880": 2
+      },
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 25,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 16,
+          "returned": 25,
+          "total": "95"
+        },
+        {
+          "offset": 25,
+          "request_index": 17,
+          "returned": 25,
+          "total": "95"
+        },
+        {
+          "offset": 50,
+          "request_index": 18,
+          "returned": 25,
+          "total": "95"
+        }
+      ],
+      "route": "generator-nuclear-outages",
+      "rows": 75,
+      "sort_direction": "asc",
+      "unique_keys": 75
+    },
+    "generator_46": {
+      "canonical_rows_sha256": "dfa1b32f7f3b09cecb983153ba74ccdbff0c1741ab9e13a49a442db48fd2b6bd",
+      "empty_terminal_page": true,
+      "facility_filter": "46",
+      "facility_ids": [
+        "46"
+      ],
+      "generator_counts_by_facility": {
+        "46": 3
+      },
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 10,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 22,
+          "returned": 3,
+          "total": "3"
+        },
+        {
+          "offset": 3,
+          "request_index": 23,
+          "returned": 0,
+          "total": "3"
+        }
+      ],
+      "route": "generator-nuclear-outages",
+      "rows": 3,
+      "sort_direction": "asc",
+      "unique_keys": 3
+    },
+    "national_25_asc": {
+      "canonical_rows_sha256": "9599a84438661069513201e70c4c9d7492c0ec5323cf65b77d8a7d2cb3dfb353",
+      "empty_terminal_page": true,
+      "facility_filter": null,
+      "facility_ids": [],
+      "measures": [
+        "capacity",
+        "outage",
+        "percentOutage"
+      ],
+      "page_size": 25,
+      "pages": [
+        {
+          "offset": 0,
+          "request_index": 14,
+          "returned": 1,
+          "total": "1"
+        },
+        {
+          "offset": 1,
+          "request_index": 15,
+          "returned": 0,
+          "total": "1"
+        }
+      ],
+      "route": "us-nuclear-outages",
+      "rows": 1,
+      "sort_direction": "asc",
+      "unique_keys": 1
+    }
+  },
+  "day": "2026-10-20",
+  "fetched_at_utc": "2026-10-21T06:52:52.614758+00:00",
+  "followup_budget": 20,
+  "followup_request_count": 15,
+  "followups": [
+    {
+      "case": "facility_25_asc",
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "case": "facility_25_asc",
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_25_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "55",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_10_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "20",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 20,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [
+        {
+          "facility": "4270",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6000",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6001",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6008",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6011",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6014",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6015",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6020",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6022",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6023",
+          "period": "2026-10-20"
+        }
+      ],
+      "returned_rows": 10,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_10_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "30",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 30,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [
+        {
+          "facility": "6026",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6036",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6038",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6040",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6045",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6051",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6072",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6099",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6103",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6105",
+          "period": "2026-10-20"
+        }
+      ],
+      "returned_rows": 10,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_10_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "40",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 40,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [
+        {
+          "facility": "6110",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6115",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6118",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6122",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6127",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6145",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6149",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6152",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6153",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6168",
+          "period": "2026-10-20"
+        }
+      ],
+      "returned_rows": 10,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_10_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "50",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [
+        {
+          "facility": "6251",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6462",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "7722",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "8036",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "8055",
+          "period": "2026-10-20"
+        }
+      ],
+      "returned_rows": 5,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_10_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "55",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_25_desc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "50",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "desc"
+          },
+          {
+            "column": "facility",
+            "direction": "desc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "desc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [
+        {
+          "facility": "566",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "371",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "210",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "204",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "46",
+          "period": "2026-10-20"
+        }
+      ],
+      "returned_rows": 5,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_25_desc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "55",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "desc"
+          },
+          {
+            "column": "facility",
+            "direction": "desc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "desc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "generator_25_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "100",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [
+        {
+          "facility": "46",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "46",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "46",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "204",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "210",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "371",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "566",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "566",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "621",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "621",
+          "generator": "4",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "649",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "649",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "649",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "649",
+          "generator": "4",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "869",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "869",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "880",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "880",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "1715",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "1729",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "1922",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "1925",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "1925",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "2410",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "2410",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "2589",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "2589",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3166",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3166",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3251",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3265",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3265",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3265",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3806",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "3806",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "4046",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "4046",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "4270",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6000",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6000",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6001",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6001",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6008",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6008",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6008",
+          "generator": "3",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6011",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6011",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6014",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6014",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6015",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6020",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6022",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6022",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6023",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6023",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6026",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6026",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6036",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6036",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6038",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6038",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6040",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6040",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6045",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6045",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6051",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6051",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6072",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6099",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6099",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6103",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6103",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6105",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6105",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6110",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6115",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6118",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6122",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6127",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6145",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6145",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6149",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6152",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6152",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6153",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6168",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6168",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6251",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6251",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "6462",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "7722",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "7722",
+          "generator": "2",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "8036",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "8055",
+          "generator": "1",
+          "period": "2026-10-20"
+        },
+        {
+          "facility": "8055",
+          "generator": "2",
+          "period": "2026-10-20"
+        }
+      ],
+      "returned_rows": 95,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "generator_25_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "100",
+        "offset": "95",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 95,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_capacity_only",
+      "echoed_params": {
+        "data": [
+          "capacity"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "100",
+        "offset": "55",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_25_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "75",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 75,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    },
+    {
+      "apiVersion": "2.1.14",
+      "case": "facility_25_asc",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "95",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 95,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      },
+      "returned_keys": [],
+      "returned_rows": 0,
+      "status": 200
+    }
+  ],
+  "locally_verified_comparisons": {
+    "facility_10_asc": {
+      "reported_total": "95",
+      "returned_rows": 55,
+      "same_ids_as_independent_100_row_request": true,
+      "terminal_offset": 55,
+      "unique_facilities": 55
+    },
+    "facility_25_desc": {
+      "reported_total": "95",
+      "returned_rows": 55,
+      "same_ids_as_independent_100_row_request": true,
+      "terminal_offset": 55,
+      "unique_facilities": 55
+    },
+    "generator_control": {
+      "facility_46_generator_count": 3,
+      "returned_rows": 95,
+      "same_facilities_as_facility_route": true,
+      "unique_facilities": 55,
+      "unique_keys": 95
+    },
+    "recorded_request_errors": 9,
+    "server_echoes_match_requested_parameters": true,
+    "total_recorded_matrix_and_followup_requests": 43
+  },
+  "metadata": {
+    "facility-nuclear-outages": {
+      "data": {
+        "capacity": {
+          "units": "megawatts"
+        },
+        "outage": {
+          "units": "megawatts"
+        },
+        "percentOutage": {
+          "units": "percent"
+        }
+      },
+      "defaultDateFormat": "YYYY-MM-DD",
+      "defaultFrequency": "daily",
+      "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+      "endPeriod": "2026-10-20",
+      "facets": [
+        {
+          "description": "Plant code",
+          "id": "facility"
+        }
+      ],
+      "frequency": [
+        {
+          "description": "One data point for each day.",
+          "format": "YYYY-MM-DD",
+          "id": "daily",
+          "query": "D"
+        }
+      ],
+      "id": "facility-nuclear-outages",
+      "name": "Facility Level Nuclear Outages",
+      "startPeriod": "2007-01-01"
+    },
+    "generator-nuclear-outages": {
+      "data": {
+        "capacity": {
+          "units": "megawatts"
+        },
+        "outage": {
+          "units": "megawatts"
+        },
+        "percentOutage": {
+          "units": "percent"
+        }
+      },
+      "defaultDateFormat": "YYYY-MM-DD",
+      "defaultFrequency": "daily",
+      "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+      "endPeriod": "2026-10-20",
+      "facets": [
+        {
+          "description": "Plant code",
+          "id": "facility"
+        },
+        {
+          "description": "Facility's generator ID number",
+          "id": "generator"
+        }
+      ],
+      "frequency": [
+        {
+          "description": "One data point for each day.",
+          "format": "YYYY-MM-DD",
+          "id": "daily",
+          "query": "D"
+        }
+      ],
+      "id": "generator-nuclear-outages",
+      "name": "Generator Level Nuclear Outages",
+      "startPeriod": "2007-01-01"
+    },
+    "us-nuclear-outages": {
+      "data": {
+        "capacity": {
+          "units": "megawatts"
+        },
+        "outage": {
+          "units": "megawatts"
+        },
+        "percentOutage": {
+          "units": "percent"
+        }
+      },
+      "defaultDateFormat": "YYYY-MM-DD",
+      "defaultFrequency": "daily",
+      "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+      "endPeriod": "2026-10-20",
+      "facets": [],
+      "frequency": [
+        {
+          "description": "One data point for each day.",
+          "format": "YYYY-MM-DD",
+          "id": "daily",
+          "query": "D"
+        }
+      ],
+      "id": "us-nuclear-outages",
+      "name": "U.S. Nuclear Outages",
+      "startPeriod": "2007-01-01"
+    }
+  },
+  "request_budget": 36,
+  "request_count": 28,
+  "requests": [
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": [],
+      "http_status": 200,
+      "path": "us-nuclear-outages/",
+      "query": {},
+      "response_metadata": {
+        "defaultDateFormat": "YYYY-MM-DD",
+        "defaultFrequency": "daily",
+        "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "endPeriod": "2026-10-20",
+        "facets": [],
+        "frequency": [
+          {
+            "description": "One data point for each day.",
+            "format": "YYYY-MM-DD",
+            "id": "daily",
+            "query": "D"
+          }
+        ],
+        "id": "us-nuclear-outages",
+        "name": "U.S. Nuclear Outages",
+        "startPeriod": "2007-01-01"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": [],
+      "http_status": 200,
+      "path": "facility-nuclear-outages/",
+      "query": {},
+      "response_metadata": {
+        "defaultDateFormat": "YYYY-MM-DD",
+        "defaultFrequency": "daily",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "endPeriod": "2026-10-20",
+        "facets": [
+          {
+            "description": "Plant code",
+            "id": "facility"
+          }
+        ],
+        "frequency": [
+          {
+            "description": "One data point for each day.",
+            "format": "YYYY-MM-DD",
+            "id": "daily",
+            "query": "D"
+          }
+        ],
+        "id": "facility-nuclear-outages",
+        "name": "Facility Level Nuclear Outages",
+        "startPeriod": "2007-01-01"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": [],
+      "http_status": 200,
+      "path": "generator-nuclear-outages/",
+      "query": {},
+      "response_metadata": {
+        "defaultDateFormat": "YYYY-MM-DD",
+        "defaultFrequency": "daily",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "endPeriod": "2026-10-20",
+        "facets": [
+          {
+            "description": "Plant code",
+            "id": "facility"
+          },
+          {
+            "description": "Facility's generator ID number",
+            "id": "generator"
+          }
+        ],
+        "frequency": [
+          {
+            "description": "One data point for each day.",
+            "format": "YYYY-MM-DD",
+            "id": "daily",
+            "query": "D"
+          }
+        ],
+        "id": "generator-nuclear-outages",
+        "name": "Generator Level Nuclear Outages",
+        "startPeriod": "2007-01-01"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "25",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 25,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "10",
+        "offset": "10",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 10,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 20,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "desc"
+          },
+          {
+            "column": "facility",
+            "direction": "desc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "desc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "25",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "desc"
+          },
+          {
+            "column": "facility",
+            "direction": "desc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 25,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "desc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "desc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "100",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "100",
+        "offset": "55",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "us-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "1"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "1",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "us-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 1,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "1"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "25",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 25,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "25",
+        "offset": "50",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 50,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 75,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "facets": {
+          "facility": [
+            "46"
+          ]
+        },
+        "frequency": "daily",
+        "length": "10",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "facets[facility][]": "46",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "3"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "facets": {
+          "facility": [
+            "46"
+          ]
+        },
+        "frequency": "daily",
+        "length": "10",
+        "offset": "1",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "facets[facility][]": "46",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 1,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "3"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "facets": {
+          "facility": [
+            "46"
+          ]
+        },
+        "frequency": "daily",
+        "length": "10",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "facets[facility][]": "46",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "3"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity",
+          "outage",
+          "percentOutage"
+        ],
+        "end": "2026-10-20",
+        "facets": {
+          "facility": [
+            "46"
+          ]
+        },
+        "frequency": "daily",
+        "length": "10",
+        "offset": "3",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          },
+          {
+            "column": "generator",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "generator-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "facets[facility][]": "46",
+        "frequency": "daily",
+        "length": 10,
+        "offset": 3,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "sort[2][column]": "generator",
+        "sort[2][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "3"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "echoed_params": {
+        "data": [
+          "capacity"
+        ],
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": "100",
+        "offset": "0",
+        "sort": [
+          {
+            "column": "period",
+            "direction": "asc"
+          },
+          {
+            "column": "facility",
+            "direction": "asc"
+          }
+        ],
+        "start": "2026-10-20"
+      },
+      "http_status": 200,
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response_metadata": {
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 75,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    },
+    {
+      "error": "TimeoutError",
+      "path": "facility-nuclear-outages/data/",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 25,
+        "offset": 95,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      }
+    }
+  ]
+}

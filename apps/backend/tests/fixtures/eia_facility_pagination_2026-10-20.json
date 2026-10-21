@@ -1,0 +1,764 @@
+{
+  "day": "2026-10-20",
+  "metadata": {
+    "facility-nuclear-outages": {
+      "data": {
+        "capacity": {
+          "units": "megawatts"
+        },
+        "outage": {
+          "units": "megawatts"
+        },
+        "percentOutage": {
+          "units": "percent"
+        }
+      },
+      "defaultDateFormat": "YYYY-MM-DD",
+      "defaultFrequency": "daily",
+      "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+      "endPeriod": "2026-10-20",
+      "facets": [
+        {
+          "description": "Plant code",
+          "id": "facility"
+        }
+      ],
+      "frequency": [
+        {
+          "description": "One data point for each day.",
+          "format": "YYYY-MM-DD",
+          "id": "daily",
+          "query": "D"
+        }
+      ],
+      "id": "facility-nuclear-outages",
+      "name": "Facility Level Nuclear Outages",
+      "startPeriod": "2007-01-01"
+    },
+    "generator-nuclear-outages": {
+      "data": {
+        "capacity": {
+          "units": "megawatts"
+        },
+        "outage": {
+          "units": "megawatts"
+        },
+        "percentOutage": {
+          "units": "percent"
+        }
+      },
+      "defaultDateFormat": "YYYY-MM-DD",
+      "defaultFrequency": "daily",
+      "description": "Generator level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+      "endPeriod": "2026-10-20",
+      "facets": [
+        {
+          "description": "Plant code",
+          "id": "facility"
+        },
+        {
+          "description": "Facility's generator ID number",
+          "id": "generator"
+        }
+      ],
+      "frequency": [
+        {
+          "description": "One data point for each day.",
+          "format": "YYYY-MM-DD",
+          "id": "daily",
+          "query": "D"
+        }
+      ],
+      "id": "generator-nuclear-outages",
+      "name": "Generator Level Nuclear Outages",
+      "startPeriod": "2007-01-01"
+    },
+    "us-nuclear-outages": {
+      "data": {
+        "capacity": {
+          "units": "megawatts"
+        },
+        "outage": {
+          "units": "megawatts"
+        },
+        "percentOutage": {
+          "units": "percent"
+        }
+      },
+      "defaultDateFormat": "YYYY-MM-DD",
+      "defaultFrequency": "daily",
+      "description": "Nuclear outages daily with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+      "endPeriod": "2026-10-20",
+      "facets": [],
+      "frequency": [
+        {
+          "description": "One data point for each day.",
+          "format": "YYYY-MM-DD",
+          "id": "daily",
+          "query": "D"
+        }
+      ],
+      "id": "us-nuclear-outages",
+      "name": "U.S. Nuclear Outages",
+      "startPeriod": "2007-01-01"
+    }
+  },
+  "pages": [
+    {
+      "apiVersion": "2.1.14",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 0,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "data": [
+          {
+            "capacity": "3755.8",
+            "capacity-units": "megawatts",
+            "facility": "46",
+            "facilityName": "Browns Ferry",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1107.1",
+            "capacity-units": "megawatts",
+            "facility": "204",
+            "facilityName": "Clinton Power Station",
+            "outage": "11.071",
+            "outage-units": "megawatts",
+            "percentOutage": "1",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1255",
+            "capacity-units": "megawatts",
+            "facility": "210",
+            "facilityName": "Wolf Creek Generating Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1172",
+            "capacity-units": "megawatts",
+            "facility": "371",
+            "facilityName": "Columbia Generating Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2120.8",
+            "capacity-units": "megawatts",
+            "facility": "566",
+            "facilityName": "Millstone",
+            "outage": "1252.2",
+            "outage-units": "megawatts",
+            "percentOutage": "59.04",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1725",
+            "capacity-units": "megawatts",
+            "facility": "621",
+            "facilityName": "Turkey Point",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "4530",
+            "capacity-units": "megawatts",
+            "facility": "649",
+            "facilityName": "Vogtle",
+            "outage": "1152",
+            "outage-units": "megawatts",
+            "percentOutage": "25.43",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1881.2",
+            "capacity-units": "megawatts",
+            "facility": "869",
+            "facilityName": "Dresden Generating Station",
+            "outage": "75.296",
+            "outage-units": "megawatts",
+            "percentOutage": "4",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1885",
+            "capacity-units": "megawatts",
+            "facility": "880",
+            "facilityName": "Quad Cities Generating Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "815.6",
+            "capacity-units": "megawatts",
+            "facility": "1715",
+            "facilityName": "Palisades",
+            "outage": "815.6",
+            "outage-units": "megawatts",
+            "percentOutage": "100",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1161",
+            "capacity-units": "megawatts",
+            "facility": "1729",
+            "facilityName": "Fermi",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "646",
+            "capacity-units": "megawatts",
+            "facility": "1922",
+            "facilityName": "Monticello",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1092",
+            "capacity-units": "megawatts",
+            "facility": "1925",
+            "facilityName": "Prairie Island",
+            "outage": "546",
+            "outage-units": "megawatts",
+            "percentOutage": "50",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2284.7",
+            "capacity-units": "megawatts",
+            "facility": "2410",
+            "facilityName": "PSEG Salem Generating Station",
+            "outage": "1145.8",
+            "outage-units": "megawatts",
+            "percentOutage": "50.15",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1926.2",
+            "capacity-units": "megawatts",
+            "facility": "2589",
+            "facilityName": "Nine Mile Point Nuclear Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2694.1",
+            "capacity-units": "megawatts",
+            "facility": "3166",
+            "facilityName": "Peach Bottom",
+            "outage": "1346.7",
+            "outage-units": "megawatts",
+            "percentOutage": "49.99",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "792.9",
+            "capacity-units": "megawatts",
+            "facility": "3251",
+            "facilityName": "H B Robinson",
+            "outage": "792.9",
+            "outage-units": "megawatts",
+            "percentOutage": "100",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2688",
+            "capacity-units": "megawatts",
+            "facility": "3265",
+            "facilityName": "Oconee",
+            "outage": "44.5",
+            "outage-units": "megawatts",
+            "percentOutage": "1.66",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1750",
+            "capacity-units": "megawatts",
+            "facility": "3806",
+            "facilityName": "Surry",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1203.4",
+            "capacity-units": "megawatts",
+            "facility": "4046",
+            "facilityName": "Point Beach",
+            "outage": "597.7",
+            "outage-units": "megawatts",
+            "percentOutage": "49.67",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1097.1",
+            "capacity-units": "megawatts",
+            "facility": "4270",
+            "facilityName": "Waterford 3",
+            "outage": "1097.1",
+            "outage-units": "megawatts",
+            "percentOutage": "100",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2278",
+            "capacity-units": "megawatts",
+            "facility": "6000",
+            "facilityName": "Donald C Cook",
+            "outage": "1084",
+            "outage-units": "megawatts",
+            "percentOutage": "47.59",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1791",
+            "capacity-units": "megawatts",
+            "facility": "6001",
+            "facilityName": "Joseph M Farley",
+            "outage": "896",
+            "outage-units": "megawatts",
+            "percentOutage": "50.03",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "4003",
+            "capacity-units": "megawatts",
+            "facility": "6008",
+            "facilityName": "Palo Verde",
+            "outage": "1333",
+            "outage-units": "megawatts",
+            "percentOutage": "33.3",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1806",
+            "capacity-units": "megawatts",
+            "facility": "6011",
+            "facilityName": "Calvert Cliffs Nuclear Power Plant",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1928",
+            "capacity-units": "megawatts",
+            "facility": "6014",
+            "facilityName": "Brunswick",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1009",
+            "capacity-units": "megawatts",
+            "facility": "6015",
+            "facilityName": "Harris",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1268",
+            "capacity-units": "megawatts",
+            "facility": "6020",
+            "facilityName": "Perry",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2405.5",
+            "capacity-units": "megawatts",
+            "facility": "6022",
+            "facilityName": "Braidwood Generation Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2387.1",
+            "capacity-units": "megawatts",
+            "facility": "6023",
+            "facilityName": "Byron Generating Station",
+            "outage": "1177.3",
+            "outage-units": "megawatts",
+            "percentOutage": "49.32",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2342.5",
+            "capacity-units": "megawatts",
+            "facility": "6026",
+            "facilityName": "LaSalle Generating Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2378.5",
+            "capacity-units": "megawatts",
+            "facility": "6036",
+            "facilityName": "Catawba",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2386.2",
+            "capacity-units": "megawatts",
+            "facility": "6038",
+            "facilityName": "McGuire",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1872",
+            "capacity-units": "megawatts",
+            "facility": "6040",
+            "facilityName": "Beaver Valley",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1990",
+            "capacity-units": "megawatts",
+            "facility": "6045",
+            "facilityName": "St Lucie",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1759",
+            "capacity-units": "megawatts",
+            "facility": "6051",
+            "facilityName": "Edwin I Hatch",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1412.5",
+            "capacity-units": "megawatts",
+            "facility": "6072",
+            "facilityName": "Grand Gulf",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2240",
+            "capacity-units": "megawatts",
+            "facility": "6099",
+            "facilityName": "Diablo Canyon",
+            "outage": "1122",
+            "outage-units": "megawatts",
+            "percentOutage": "50.09",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2494",
+            "capacity-units": "megawatts",
+            "facility": "6103",
+            "facilityName": "PPL Susquehanna",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2374.3",
+            "capacity-units": "megawatts",
+            "facility": "6105",
+            "facilityName": "Limerick",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "854.5",
+            "capacity-units": "megawatts",
+            "facility": "6110",
+            "facilityName": "James A Fitzpatrick",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1248",
+            "capacity-units": "megawatts",
+            "facility": "6115",
+            "facilityName": "Seabrook",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1174.2",
+            "capacity-units": "megawatts",
+            "facility": "6118",
+            "facilityName": "PSEG Hope Creek Generating Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "581.1",
+            "capacity-units": "megawatts",
+            "facility": "6122",
+            "facilityName": "R. E. Ginna Nuclear Power Plant",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "999.3",
+            "capacity-units": "megawatts",
+            "facility": "6127",
+            "facilityName": "V C Summer",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2460",
+            "capacity-units": "megawatts",
+            "facility": "6145",
+            "facilityName": "Comanche Peak",
+            "outage": "1235",
+            "outage-units": "megawatts",
+            "percentOutage": "50.2",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "908",
+            "capacity-units": "megawatts",
+            "facility": "6149",
+            "facilityName": "Davis Besse",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2332.5",
+            "capacity-units": "megawatts",
+            "facility": "6152",
+            "facilityName": "Sequoyah",
+            "outage": "1155.1",
+            "outage-units": "megawatts",
+            "percentOutage": "49.52",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1236",
+            "capacity-units": "megawatts",
+            "facility": "6153",
+            "facilityName": "Callaway",
+            "outage": "1236",
+            "outage-units": "megawatts",
+            "percentOutage": "100",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1958",
+            "capacity-units": "megawatts",
+            "facility": "6168",
+            "facilityName": "North Anna",
+            "outage": "976",
+            "outage-units": "megawatts",
+            "percentOutage": "49.85",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2660",
+            "capacity-units": "megawatts",
+            "facility": "6251",
+            "facilityName": "South Texas Project",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "985.4",
+            "capacity-units": "megawatts",
+            "facility": "6462",
+            "facilityName": "River Bend Station",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "2343",
+            "capacity-units": "megawatts",
+            "facility": "7722",
+            "facilityName": "Watts Bar Nuclear Plant",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "768.5",
+            "capacity-units": "megawatts",
+            "facility": "8036",
+            "facilityName": "Cooper",
+            "outage": "768.5",
+            "outage-units": "megawatts",
+            "percentOutage": "100",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          },
+          {
+            "capacity": "1840.7",
+            "capacity-units": "megawatts",
+            "facility": "8055",
+            "facilityName": "Arkansas Nuclear One",
+            "outage": "0",
+            "outage-units": "megawatts",
+            "percentOutage": "0",
+            "percentOutage-units": "percent",
+            "period": "2026-10-20"
+          }
+        ],
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    },
+    {
+      "apiVersion": "2.1.14",
+      "query": {
+        "data[0]": "capacity",
+        "data[1]": "outage",
+        "data[2]": "percentOutage",
+        "end": "2026-10-20",
+        "frequency": "daily",
+        "length": 100,
+        "offset": 55,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "sort[1][column]": "facility",
+        "sort[1][direction]": "asc",
+        "start": "2026-10-20"
+      },
+      "response": {
+        "data": [],
+        "dateFormat": "YYYY-MM-DD",
+        "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors.",
+        "frequency": "daily",
+        "total": "95"
+      }
+    }
+  ],
+  "recorded_on": "2026-10-21",
+  "transport": "Python standard-library urllib; independent of extractor"
+}
