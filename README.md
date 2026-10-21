@@ -1,6 +1,6 @@
 # Outage Explorer
 
-A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; refresh APIs and the SQL Explorer UI are not implemented.
+A minimal monorepo for an outage exploration application, with a liveness API, React starter page, manual EIA schema probe, local date-window extraction and incremental refresh commands, and DuckDB views over published Parquet snapshots. Authenticated dataset catalog and preview APIs and restricted read-only SQL are available; Admin refresh jobs are available; the SQL Explorer UI is not implemented.
 
 ## Layout
 
@@ -12,6 +12,8 @@ apps/
       api/auth.py         # Login and current user
       api/datasets.py     # Authorized catalog and paginated previews
       api/query.py        # Validated single-dataset read-only SQL
+      api/refresh.py      # Admin-only asynchronous refresh/status
+      refresh_jobs.py     # In-process refresh worker and safe job results
       main.py             # FastAPI app
       explore_eia.py      # Bounded schema probe
       extract_eia.py      # Validated Parquet snapshot extraction
@@ -76,9 +78,9 @@ Tokens use a fixed versioned HMAC-SHA256 format with signed subject, issue/expir
 | Ad hoc SQL capability | No | Yes | Yes |
 | Refresh capability | No | No | Yes |
 
-`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Catalog routes authenticate before listing and filter with `allowed_datasets`; preview routes apply `authorize_datasets` before opening a snapshot. The SQL route requires `require_sql` before SQL parsing, authorizes its one allowed dataset reference, and rejects subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. The SQL endpoint below adds a strict structural compiler and rejects resource-access functions; the role/dataset policy helper alone is not a SQL sandbox. Refresh routes must depend on `require_refresh` before touching data or invoking extraction.
+`auth.current_user`, `require_roles`, `require_dataset`, `require_sql`, and `require_refresh` are reusable FastAPI dependencies. `DATASET_PERMISSIONS`, `allowed_datasets`, and `authorize_datasets` centralize the canonical analytical-view policy, rejecting unknown names by default. Catalog routes authenticate before listing and filter with `allowed_datasets`; preview routes apply `authorize_datasets` before opening a snapshot. The SQL route requires `require_sql` before SQL parsing, authorizes its one allowed dataset reference, and rejects subqueries/CTEs. Viewer is denied ad hoc SQL entirely, preventing SQL aliases, joins, or direct requests from becoming a path to restricted data. The SQL endpoint below adds a strict structural compiler and rejects resource-access functions; the role/dataset policy helper alone is not a SQL sandbox. Refresh start/status routes depend on `require_refresh` before touching job state, data, or invoking extraction.
 
-Login, identity, public liveness, and authorized catalog/preview endpoints exist. The restricted SQL endpoint is implemented; the refresh API remains deferred. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
+Login, identity, public liveness, and authorized catalog/preview endpoints exist. Restricted SQL and Admin refresh start/status endpoints are implemented. Existing local Python/CLI analytical and extraction helpers are trusted internal tools, not authenticated HTTP endpoints; never expose their DuckDB connections or raw file access directly. The tests install temporary guarded routes with work counters to verify 401/403 occurs before any data read, query, or refresh work. Frontend controls are not the authorization boundary.
 
 This local development foundation has no external identity provider, registration, password reset, or persistent account database. It adds no dependencies. Use HTTPS and deployment-level request/rate limits before exposing login outside a trusted local environment; access tokens are bearer credentials. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_auth.py` for offline authentication/policy tests.
 
@@ -117,7 +119,7 @@ JSON dates are ISO strings, decimals are exact decimal strings (not binary-float
 
 Authentication failures return 401; authenticated forbidden datasets return 403; unknown canonical dataset names return 404; invalid preview filters/pagination return 400. Missing, corrupt, or incompatible published data returns a generic 503, with no internal paths, SQL errors, or private snapshot metadata. Successful responses use `Cache-Control: no-store` and `Vary: Authorization` to prevent sharing cached results between personas.
 
-Each request opens one validated, pinned connection and closes it afterward. Preview count and rows therefore use the same immutable snapshot even if publication changes mid-request. Separate page requests may observe newer publications; pagination is not pinned across requests. Existing full-snapshot validation scans all route files internally, but only authorized dataset columns and rows can leave the API; restricted validation failures are generic. This retains the current opening-time validation cost. A complete three-route publication is still required, so the known facility completeness discrepancy continues to block the affected real window. The preview endpoint does not accept SQL; use the restricted query endpoint below. No refresh API or frontend was added. Offline FastAPI coverage is in `apps/backend/tests/test_datasets.py`.
+Each request opens one validated, pinned connection and closes it afterward. Preview count and rows therefore use the same immutable snapshot even if publication changes mid-request. Separate page requests may observe newer publications; pagination is not pinned across requests. Existing full-snapshot validation scans all route files internally, but only authorized dataset columns and rows can leave the API; restricted validation failures are generic. This retains the current opening-time validation cost. A complete three-route publication is still required, so the known facility completeness discrepancy continues to block the affected real window. The preview endpoint does not accept SQL; use the restricted query endpoint below. No preview frontend was added. Offline FastAPI coverage is in `apps/backend/tests/test_datasets.py`.
 
 ## Read-only SQL (US-04, US-05)
 
@@ -144,6 +146,39 @@ curl -X POST http://127.0.0.1:8000/query \
 Successful responses are `no-store` and vary by Authorization. Malformed/unsupported SQL, invalid request bodies, and binding/conversion errors return a generic 400 without SQL text, engine errors, or paths. Unknown/forbidden datasets return generic 403. Missing/invalid snapshots or storage failures return generic 503. Each request uses one validated pinned connection, closes it afterward, and exposes no snapshot metadata.
 
 The strict subset is the SQL security boundary; this is not a general-purpose DuckDB shell. Syntax/row limits do not impose a hard execution-time or scan-memory budget: snapshot validation and allowed sorts/filters can still scan local data. Existing immutable-file/retention and full-snapshot validation assumptions remain. Only trusted published analytical views are exposed; expanding the subset or enabling any function requires explicit security review and tests. No caching, database writes, network/EIA requests, or new dependencies were added. Offline regressions are in `apps/backend/tests/test_query.py`.
+
+## Admin refresh jobs (US-06)
+
+Use a **single API worker** for this local challenge. Both `POST /refresh` and `GET /refresh/{job_id}` require an Admin bearer token. Viewer and Analyst receive 403, and unauthenticated/invalid-token requests receive 401, before job admission/lookup, credential loading, or refresh work. The background worker reuses `refresh_eia.refresh`; it does not introduce another extraction or publication path.
+
+```sh
+# Bootstrap only when no cumulative snapshot has been published:
+curl -X POST http://127.0.0.1:8000/refresh \
+  -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Content-Type: application/json' \
+  --data '{"start_date":"2026-10-18","end_date":"2026-10-20"}'
+# Subsequent refresh: start is derived from the current watermark.
+curl -X POST http://127.0.0.1:8000/refresh \
+  -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Content-Type: application/json' \
+  --data '{"end_date":"2026-10-21","overlap_days":2}'
+# Poll the Location returned by POST (Admin token required):
+curl -H "Authorization: Bearer $ACCESS_TOKEN" http://127.0.0.1:8000/refresh/JOB_ID
+```
+
+POST accepts required `end_date`, optional bootstrap-only `start_date`, `overlap_days` (default 7, allowed 0–3660), and explicit `conflict_policy` (`reject` by default, or `replace` for reviewed corrections). It accepts no paths, credentials, client callbacks, or extraction bypass options. Invalid body/date order/options return 400. Mode/window rules requiring existing data (such as supplying a start for an existing snapshot or omitting it on first run) are checked asynchronously by the ingestion engine and recorded as job failures.
+
+A successful admission returns **202**, a random `job_id`, `status="pending"`, and a `Location: /refresh/{job_id}` polling URL. This acknowledges admission, not data publication. States progress `pending → running → succeeded/failed`. Each response contains the request, UTC creation/start/finish timestamps, `fetched_rows` progress counts, final `row_counts` when successful, `published`, `outcome`, and nullable safe `error`/`warning` summaries. Counts use public dataset names and never combine levels. `fetched_rows` includes validated source pages only; it is not a published row count. Final counts describe merged snapshots (or the validated existing data for a no-op).
+
+- `succeeded`, `outcome="published"`, `published=true`: the engine completed publication, or exception recovery validated the current snapshot as this run's publication. A post-publication error adds a generic warning; it cannot relabel an actually confirmed publication as an uncommitted failure.
+- `succeeded`, `outcome="no_op"`, `published=false`: the engine validated a zero-overlap window with nothing new to fetch. Watermarks remain unchanged.
+- `failed`: the worker did not confirm completion. `published=false` is used when the engine explicitly reports no publication or credentials are missing; `published=null` means the API cannot prove the publication outcome. If publication was reported but cannot be verified against the current pointer, a warning tells the Admin to inspect the local audit. A newer external CLI publication can make this determination ambiguous; the API never guesses success from an orphan manifest.
+
+Another POST while a job is pending/running returns **409**, with no second admitted job or queue. Once the job finishes, a new start may be admitted. The pipeline's existing nonblocking filesystem writer lock additionally prevents overlapping extraction/publication with CLI writers or another process using the same output root. A competing external writer can cause the accepted API job to fail safely; it cannot corrupt or partially replace data. Existing bootstrap, overlap, conflict, completeness, schema, audit, retry, watermark, and atomic three-route publication policies remain unchanged. The facility 55-versus-95 discrepancy still fails; no bypass was added.
+
+EIA credentials are loaded securely from the environment or `apps/backend/.env`, only inside the authorized worker, using the existing loader and fresh-connection HTTPX configuration. Missing credentials produce a failed job with `error="EIA credentials are not configured."`; the ingestion engine is still called with an empty key to persist its ordinary failed-attempt audit before networking. Unavailable storage can prevent audit creation. Responses never contain keys, request URLs, raw exceptions, filesystem paths, private run IDs, or snapshot versions. Unknown job IDs return 404; shutdown/unavailable admission returns generic 503. Polling a failed job returns HTTP 200 with its failed state. All job responses are `no-store` and vary by Authorization.
+
+Catalog, preview, and SQL readers remain available while refresh runs: the dedicated background thread stages new data separately, and readers keep using their pinned immutable snapshot. Only the existing atomic pointer replacement changes what newly opened connections see; old files are retained.
+
+**Job state is not durable across server restarts.** One in-process worker thread and a small in-memory history serve this local API; completed entries remain in memory until restart. There is no broker, distributed queue, cancellation API, automatic retry of whole jobs, or reconstruction of API job IDs from ingestion audits. Polling an old ID after restart returns 404. Durable pipeline audits and published snapshots remain on disk; the next engine invocation performs its existing audit recovery. Graceful API shutdown waits for admitted work and can delay reload; a forced stop may leave a running audit/unreferenced staging files, which never constitute a publication. Use one API process/worker: multiple workers have independent job dictionaries and polling can reach a worker that does not know the ID, even though the filesystem writer lock still prevents concurrent ingestion. Offline tests mock pipeline behavior and HTTP clients; no live refresh was run during implementation.
 
 ## Frontend
 
@@ -178,7 +213,7 @@ Environment files, local data, build outputs, and dependencies are ignored by Gi
 
 ## Manual EIA schema exploration
 
-Configure `EIA_API_KEY` in `apps/backend/.env` or export it in your shell. The exploration tool uses python-dotenv to load that specific file without overriding exported values or interpolating variables. The FastAPI application makes no EIA requests; authentication reads only its AUTH settings from local configuration.
+Configure `EIA_API_KEY` in `apps/backend/.env` or export it in your shell. The exploration tool uses python-dotenv to load that specific file without overriding exported values or interpolating variables. Authentication reads its AUTH settings from local configuration; only an authorized Admin refresh job invokes EIA extraction. Catalog, preview, and SQL requests use local data only.
 
 From the repository root, with backend dependencies installed:
 
