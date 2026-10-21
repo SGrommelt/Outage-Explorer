@@ -114,6 +114,21 @@ See [docs/EIA_EXTRACTION.md](docs/EIA_EXTRACTION.md) for output layout, schemas,
 
 The [completed pagination investigation](docs/EIA_PAGINATION_INVESTIGATION.md) independently reproduces the facility mismatch and distinguishes verified evidence from unresolved hypotheses. Its recorded-response regression runs offline; validation has not been weakened.
 
+## Incremental refresh
+
+The cumulative refresh command uses a dedicated current snapshot, per-route watermarks, and durable ingestion audits. From the repository root:
+
+```sh
+# First run (explicit starting window)
+apps/backend/.venv/bin/python -m outage_explorer.refresh_eia --start 2026-10-18 --end 2026-10-20
+# Subsequent run (start derived from the last successful publication)
+apps/backend/.venv/bin/python -m outage_explorer.refresh_eia --end 2026-10-21 --overlap-days 2
+```
+
+Output defaults to `data/eia/incremental`. Identical overlap rows merge once; conflicting values fail unless `--conflict-policy replace` is explicitly selected. All three datasets and watermarks publish through one atomic pointer update. Failed attempts retain audit metadata without advancing watermarks. The known facility total discrepancy still blocks publication; no completeness bypass was added and no live refresh was run.
+
+See [docs/EIA_INCREMENTAL_REFRESH.md](docs/EIA_INCREMENTAL_REFRESH.md) for legacy snapshot adoption, replacement policy, output layout, recovery, and limits. The original extraction command retains its independent date-window behavior.
+
 ## Dependency setup notes
 
 Vitest uses the patched 4.1 release line, compatible with the existing Vite 6 and Node 20 setup. Some npm 10 versions crash with `Cannot read properties of null (reading 'edgesOut')` when resolving its optional peer dependencies. Use `npm ci` with the supplied lockfile for normal setup. If updating dependencies triggers this resolver error, use temporary newer tools without changing global installations:

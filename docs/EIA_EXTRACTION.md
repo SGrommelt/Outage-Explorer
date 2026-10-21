@@ -2,6 +2,8 @@
 
 This command builds on the observed wire schema in [EIA_SCHEMA.md](EIA_SCHEMA.md). It uses HTTPX, PyArrow, and python-dotenv already declared by the backend. It does not introduce a database, scheduler, distributed infrastructure, or web API endpoints.
 
+For cumulative merging, watermarks, and durable ingestion run audits, use the separate [incremental refresh command](EIA_INCREMENTAL_REFRESH.md). It reuses this command's strict route extraction checks; the independent window workflow below remains unchanged.
+
 ## Run from the repository root
 
 Install the backend and configure `EIA_API_KEY` in `apps/backend/.env` or the environment, as documented in the README. Exported values take precedence. Keys are not command-line arguments and are never logged. The extractor reuses the exploration tool's environment loader and metadata/page validators; the exploration command remains unchanged.
@@ -122,4 +124,4 @@ Remaining limits:
 - Intermittent connection-reuse timeouts remain unexplained. Fresh connections and bounded retries mitigate them; they do not guarantee EIA availability.
 - Strict null/precision/schema-drift policies can reject legitimate historical variants; review evidence before changing those policies.
 - Publication assumes local POSIX-style atomic rename and directory fsync (tested on macOS). Object storage/network filesystems and Windows are not validated.
-- Uniqueness sets grow with the date window; this local implementation is not intended to hold full-history keys for arbitrarily large runs. No resume checkpoint, history merge, or snapshot garbage collection is implemented.
+- Uniqueness sets grow with the date window; this local implementation is not intended to hold full-history keys for arbitrarily large runs. This window command has no resume checkpoint or history merge; cumulative merging is available through the separate refresh command. Snapshot garbage collection is not implemented.
