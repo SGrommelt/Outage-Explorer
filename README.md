@@ -244,6 +244,33 @@ The functions use a few local SQL scans and materialize their result lists for t
 
 Offline coverage includes reconciled totals, micro-MW differences, capacity differences, unmatched groups, missing boundary dates, empty routes, null/nonfinite values, duplicate keys, range flags, threshold boundaries, entity isolation, prior-window observations, reporting gaps, and snapshot pinning. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_diagnostics.py`.
 
+## US-08: daily fleet capacity offline
+
+**US-08:** “As an Analyst, I want the share of total fleet capacity offline per day, ready-made.”
+
+`outage_explorer.capacity.daily_fleet_offline_share` is the primary metric. It uses only the national analytical view: retained EIA metadata identifies `us-nuclear-outages` as **U.S. Nuclear Outages**, specifies one observation per day with no entity facets, and labels both `capacity` and `outage` in **megawatts**. These are EIA's reported U.S. nuclear capacity/outage totals, not sums reconstructed from the other levels. See the verified [schema and recorded metadata](docs/EIA_SCHEMA.md). Exact fleet membership, capacity-rating methodology, and revision/reconciliation rules are not established by that metadata.
+
+```text
+fleet_offline_share_pct = national_outage_mw / national_capacity_mw * 100
+```
+
+```python
+from datetime import date
+from outage_explorer.analytics import open_analytics
+from outage_explorer.capacity import daily_fleet_offline_share
+
+with open_analytics() as db:
+    rows = daily_fleet_offline_share(db, date(2026, 10, 18), date(2026, 10, 20))
+```
+
+The function returns exactly one result for each requested inclusive date: `outage_date`, `total_fleet_capacity_mw`, `offline_capacity_mw`, `fleet_offline_share_pct`, and `status`. MW inputs preserve source Decimal precision. The percentage uses Decimal arithmetic with 60-digit working precision and explicit half-even rounding to six fractional percentage-point digits; DuckDB's floating-point division is not used. Thus 100 MW offline out of 300 MW returns `33.333333` percent. Rounded percentages may display 0 or 100 for values very near those endpoints. EIA's separately reported `percentOutage` is not substituted for the required formula or forced to match it.
+
+A share is returned only for finite inputs with `capacity > 0` and `0 <= outage <= capacity` (`status='ok'`). This is the metric's interpretation policy, not a new extraction rule. Zero capacity and zero outage retain zero MW but yield a null share (`zero_capacity`), never 0% for 0/0. `missing_values`, `unsupported_values` (negative/nonfinite), and `inconsistent_values` (outage greater than capacity, including positive outage at zero capacity) also yield null shares; unsupported numeric totals are withheld. Duplicate days yield one `duplicate_key` result with both totals and share withheld rather than arbitrarily selecting or summing records. Missing days yield one `missing_date` result with null totals/share; this means absent from the local snapshot, not a proven EIA omission.
+
+The existing `offline_capacity(db, start, end, level="national")` remains available for national, facility, or generator MW observations and the conditional `available_capacity_mw = capacity_mw - outage_mw` residual. Available capacity is not measured generation or guaranteed dispatchable output. Neither helper combines source grains, infers fully offline-reactor counts, sums MW across dates as energy, or reopens the snapshot pointer. Decimal/date serialization for an eventual API must be deliberate.
+
+Strict snapshot opening normally rejects null/nonfinite values and duplicate keys. Synthetic Parquet tests cover the formula, varying dates, level isolation, zero/full/partial outages, large decimals and rounding; isolated in-memory faults exercise defensive statuses and missing/duplicate days. Run `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_capacity.py`. No source fields, dependencies, or extraction policies were added. The known facility completeness discrepancy still blocks the affected full three-route snapshot, even when querying only the national metric.
+
 ## Dependency setup notes
 
 Vitest uses the patched 4.1 release line, compatible with the existing Vite 6 and Node 20 setup. Some npm 10 versions crash with `Cannot read properties of null (reading 'edgesOut')` when resolving its optional peer dependencies. Use `npm ci` with the supplied lockfile for normal setup. If updating dependencies triggers this resolver error, use temporary newer tools without changing global installations:
