@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { formatDecimal } from "@/lib/format";
 import type { Cell, Column } from "@/lib/data";
 
 export function DataTable({ columns, rows, caption }: { columns: Column[]; rows: Cell[][]; caption: string }) {
   const definitions = useMemo<ColumnDef<Cell[]>[]>(() => columns.map((column, index) => ({
     id: String(index), accessorFn: row => row[index],
     header: () => <>{column.name}<span className="block text-xs font-normal text-slate-500">{column.type}</span></>,
-    cell: context => context.getValue() === null ? <span className="text-slate-500">NULL</span> : String(context.getValue() ?? ""),
+    cell: context => context.getValue() === null ? <span className="text-slate-500">NULL</span> : (/(_mw$|_pct$|percentage$)/i.test(column.name) || column.type === "MW" || column.type.startsWith("%")) ? formatDecimal(context.getValue() as Cell) : String(context.getValue() ?? ""),
   })), [columns]);
   const table = useReactTable({ data: rows, columns: definitions, getCoreRowModel: getCoreRowModel(), manualPagination: true });
   return <div className="mt-5 overflow-x-auto rounded-md border border-slate-200" tabIndex={0} role="region" aria-label={caption}>

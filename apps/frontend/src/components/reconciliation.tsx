@@ -1,3 +1,4 @@
+import { formatDecimal as formatMw } from "@/lib/format";
 import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@/lib/api";
@@ -31,13 +32,7 @@ interface Facility extends Comparison {
 }
 interface FacilityResponse { date: string; page: number; page_size: number; total: number; source_completeness: Completeness; rows: Facility[] }
 const statusLabel: Record<Status, string> = { equal: "Matching aggregates", difference: "Differences", missing_level: "Missing coverage", invalid_data: "Unavailable values" };
-/** Group integers and trim only insignificant zeros; never round via Number. */
-export function formatMw(value: string | null): string {
-  if (value === null) return "Unavailable";
-  const [integer, fraction = ""] = value.split(".");
-  const tail = fraction.replace(/0+$/, "");
-  return integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (tail ? `.${tail}` : "");
-}
+export { formatDecimal as formatMw } from "@/lib/format";
 function errorMessage(error: unknown) {
   if (error instanceof ApiError) {
     if (error.status === 403) return "Reconciliation is available to Analyst and Admin only.";

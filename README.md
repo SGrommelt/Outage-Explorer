@@ -74,7 +74,7 @@ In another terminal, from the repository root:
 VITE_DEMO_MODE=true VITE_API_BASE_URL=/api npm run dev
 ```
 
-Open Vite's printed URL (normally http://localhost:5173), sign in with your configured development passwords, select a dataset, or run `SELECT * FROM generator_outages ORDER BY outage_date LIMIT 10` as Analyst/Admin. For the metric, choose October 20, 2026: **100056.700000 MW** fleet capacity, **19859.767000 MW** offline, **19.848513%** offline share. Viewer can see only the national catalog/preview and national metric; SQL and refresh remain forbidden to Viewer. Use dates within the archived range to see real rows.
+Open Vite's printed URL (normally http://localhost:5173), sign in with your configured development passwords, select a dataset, or run `SELECT * FROM generator_outages ORDER BY outage_date LIMIT 10` as Analyst/Admin. Fleet offline share loads the latest archived period automatically. For an example observation, choose October 20, 2026: **100056.700000 MW** fleet capacity, **19859.767000 MW** offline, **19.848513%** offline share. Viewer can see only the national catalog/preview and national metric; SQL and refresh remain forbidden to Viewer. Use dates within the archived range to see real rows.
 
 `VITE_DEMO_MODE` adds a visible warning on login and every application section; it is only a label and **does not select a backend or grant permissions**. The existing Vite `/api` proxy selects the server on port 8000. The demo backend independently labels every response with `X-Outage-Explorer-Data-Mode: demo-completeness-unverified`, a safe notice header, demo-prefixed catalog descriptions, and a demo OpenAPI title. Always use the explicitly named backend entry point and frontend flag together. No CORS change is needed with the proxy.
 
@@ -243,7 +243,9 @@ In **Refresh** (Admin only), enter an end date, an initial start date for the fi
 
 Leaving Refresh, logging out, or reloading stops client polling and clears the locally tracked job; it does **not** cancel server work. Copy the job ID to inspect it with the status API example above if needed. There is no persisted browser job history. Server restarts lose API job IDs; pipeline audits remain durable as described above. Expired authentication hides all job details and requires login again. The known EIA facility total mismatch can still make a real refresh fail; completeness and atomic publication remain strict.
 
-In **Fleet offline share** (all three roles), choose an inclusive date window of at most 366 days and load the metric. The accessible daily bar trend uses a fixed 0–100% scale, with exact server-returned decimal percentages beside each date and a full date/MW/percentage/status table. Only bar widths use approximate JavaScript numbers; the calculation remains on the backend. Missing/invalid days are explicit gaps, never zero-filled. A complete local snapshot is required; missing or incompatible snapshots show an unavailable message. Editing dates or changing accounts clears previous results. This metric has no facility or generator output.
+In **Fleet offline share** (all three roles), the most recent national observation determines the default end date; the start is 29 days earlier, clipped to available history. No current-day or demo-date assumption is made. One metric request returns the latest bounded historical period and fills the date controls. You can choose another inclusive window of at most 366 days. A prominent latest-observation card shows the date, percentage, MW inputs, and formula. The responsive SVG trend uses a fixed 0–100% scale and breaks at missing/invalid days, with no interpolation. A true 0% is plotted. The accessible table retains exact server-returned values; only SVG coordinates use approximate JavaScript numbers. Missing/invalid percentages remain unavailable, including on the latest-day card. The existing demo warning remains visible; unavailable snapshots show a safe error with retry. Editing dates or changing accounts clears previous results. This metric has no facility or generator output.
+
+MW columns in dataset previews, SQL results (recognized `_mw` names), reconciliation, and the metric use thousands separators and trim only insignificant trailing zeros. No meaningful fractional digits are rounded away, including micro-MW reconciliation gaps. Percentage columns follow the same rule; the metric remains rounded to six places by the backend, and the headline includes `%`. ISO dates (`YYYY-MM-DD`) are retained to avoid locale ambiguity. Column names/types and NULL markers remain visible.
 
 ## Checks
 
@@ -618,6 +620,8 @@ from outage_explorer.capacity import daily_fleet_offline_share
 with open_analytics() as db:
     rows = daily_fleet_offline_share(db, date(2026, 10, 18), date(2026, 10, 20))
 ```
+
+Both date parameters are optional: when omitted, the endpoint derives the latest bounded 30-day period from national observations in the same pinned connection; an empty source returns `rows: []`. Explicit date ranges retain their existing calculation and validation semantics.
 
 The authenticated API exposes the existing calculation through `GET /metrics/fleet-offline-share?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`:
 

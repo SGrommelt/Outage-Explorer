@@ -121,9 +121,39 @@ def test_incompatible_physical_schema_is_unavailable(client, settings, tmp_path)
     assert response.status_code == 503 and str(tmp_path) not in response.text
 
 
-def test_missing_required_dates(client, settings):
+def test_default_dates_use_latest_national_observation(client, settings, tmp_path):
+    publish(tmp_path)
+    response = client.get('/metrics/fleet-offline-share', headers=headers(settings, 'viewer'))
+    assert response.status_code == 200
+    assert [row['outage_date'] for row in response.json()['rows']] == [str(START), str(END)]
+    assert len(client.opened) == 1
+
+
+def test_default_period_is_bounded_and_keeps_missing_days(client, settings, tmp_path, monkeypatch):
+    publish(tmp_path)
+    @contextmanager
+    def opening():
+        with analytics.open_analytics(tmp_path) as db:
+            db.execute('CREATE OR REPLACE TEMP TABLE national_outages AS SELECT * FROM national_outages')
+            db.execute('UPDATE national_outages SET outage_date = outage_date + INTERVAL 90 DAY WHERE outage_date = ?', [END])
+            yield db
+    monkeypatch.setattr(metrics, 'open_analytics', opening)
     response = client.get('/metrics/fleet-offline-share', headers=headers(settings))
-    assert response.status_code == 400 and not client.opened
+    rows = response.json()['rows']
+    assert len(rows) == 30
+    assert rows[-1]['outage_date'] == str(END + timedelta(days=90))
+    assert all(row['status'] == 'missing_date' for row in rows[:-1])
+
+
+def test_empty_default_source(client, settings, tmp_path, monkeypatch):
+    publish(tmp_path)
+    @contextmanager
+    def opening():
+        with analytics.open_analytics(tmp_path) as db:
+            db.execute('CREATE OR REPLACE TEMP TABLE national_outages AS SELECT * FROM national_outages WHERE false')
+            yield db
+    monkeypatch.setattr(metrics, 'open_analytics', opening)
+    assert client.get('/metrics/fleet-offline-share', headers=headers(settings)).json() == {'rows': []}
 
 
 def test_maximum_window_is_inclusive(client, settings, tmp_path):

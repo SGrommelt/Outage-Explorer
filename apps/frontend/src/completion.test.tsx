@@ -45,8 +45,8 @@ test.each(["viewer", "analyst", "admin"])("%s sees national metric; only Admin s
   fireEvent.click(screen.getByRole("button", { name: "Fleet offline share" })); metricSubmit();
   expect(await screen.findByRole("cell", { name: "33.333333" })).toBeVisible();
   expect(screen.getByRole("figure", { name: /Daily national/ })).toBeVisible();
-  expect(screen.getByRole("cell", { name: "300.000000" })).toBeVisible();
-  expect(calls.filter(call => call.url.startsWith("/api/metrics/")).length).toBe(1);
+  expect(screen.getByRole("cell", { name: "300" })).toBeVisible();
+  expect(calls.filter(call => call.url.startsWith("/api/metrics/")).length).toBe(2);
   expect(calls.some(call => call.url.startsWith("/api/refresh"))).toBe(false);
 });
 
@@ -66,7 +66,7 @@ test("metric date edits clear old values and invalid ranges do not fetch", async
   expect(screen.queryByRole("cell")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Load daily metric" }));
   expect(screen.getByRole("alert")).toHaveTextContent("at most 366 days");
-  expect(calls.filter(call => call.url.startsWith("/api/metrics/")).length).toBe(1);
+  expect(calls.filter(call => call.url.startsWith("/api/metrics/")).length).toBe(2);
 });
 
 test.each([503, 403, 0])("metric error %s shows a safe message", async status => {
@@ -140,7 +140,7 @@ test("logout aborts polling and hides job details from a new Viewer session", as
   refreshSubmit(); await screen.findByText("Job ID: local-job"); await waitFor(() => expect(signal).toBeDefined());
   fireEvent.click(screen.getByRole("button", { name: "Log out" }));
   expect(signal?.aborted).toBe(true);
-  role = "viewer"; handle = () => json({ datasets: [] }); await login();
+  role = "viewer"; handle = url => json(url.startsWith("/api/metrics/") ? { rows: [] } : { datasets: [] }); await login();
   await act(async () => resolve(json({ ...pending, status: "succeeded" })));
   expect(screen.queryByText("Job ID: local-job")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
@@ -163,7 +163,7 @@ test("metric values and late responses are cleared on logout", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Load daily metric" }));
   await waitFor(() => expect(resolve).toBeDefined());
   fireEvent.click(screen.getByRole("button", { name: "Log out" }));
-  role = "viewer"; handle = () => json({ datasets: [] }); await login();
+  role = "viewer"; handle = url => json(url.startsWith("/api/metrics/") ? { rows: [] } : { datasets: [] }); await login();
   await act(async () => resolve(json({ rows: [day] })));
   expect(screen.queryByRole("cell")).not.toBeInTheDocument();
   expect(screen.queryByText("33.333333%")).not.toBeInTheDocument();
