@@ -65,7 +65,8 @@ function Shell() {
       <main className="min-w-0 rounded-xl border border-slate-200 bg-white p-6 sm:p-9">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Workspace</p>
         <h1 className="mt-3 text-2xl font-semibold">{active.label}</h1>
-        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : active.id === "reconciliation" && user.role !== "viewer" ? <Reconciliation /> : active.id === "fleet" ? <FleetShare /> : user.role === "admin" ? <Refresh /> : null}
+        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : active.id === "reconciliation" && user.role !== "viewer" ? <Reconciliation /> : active.id === "fleet" ? <FleetShare /> : null}
+        {user.role === "admin" && <div key={user.username} hidden={active.id !== "refresh"}><Refresh /></div>}
       </main>
     </div>
   </div>;

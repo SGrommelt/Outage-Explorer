@@ -114,6 +114,10 @@ class RefreshJobs:
                 raise
             return pending
 
+    def active(self) -> RefreshJob | None:
+        with self._lock:
+            return self._jobs[self._active].public.model_copy(deep=True) if self._active else None
+
     def get(self, job_id: str) -> RefreshJob:
         with self._lock:
             return self._jobs[job_id].public.model_copy(deep=True)

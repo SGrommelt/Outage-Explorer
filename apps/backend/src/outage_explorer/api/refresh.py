@@ -28,6 +28,14 @@ def start_refresh(body: RefreshRequest, jobs: RefreshJobs = Depends(admin_jobs))
     return response
 
 
+@router.get('/active', response_model=RefreshJob | None)
+def active_refresh(jobs: RefreshJobs = Depends(admin_jobs)) -> JSONResponse:
+    job = jobs.active()
+    if job is None:
+        return JSONResponse(None, headers={'Cache-Control': 'no-store', 'Vary': 'Authorization'})
+    return _response(job)
+
+
 @router.get('/{job_id}', response_model=RefreshJob)
 def refresh_status(job_id: str, jobs: RefreshJobs = Depends(admin_jobs)) -> JSONResponse:
     try:

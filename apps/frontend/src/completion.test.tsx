@@ -168,3 +168,115 @@ test("metric values and late responses are cleared on logout", async () => {
   expect(screen.queryByRole("cell")).not.toBeInTheDocument();
   expect(screen.queryByText("33.333333%")).not.toBeInTheDocument();
 });
+
+test("navigation during admission retains one request and accepted tracking", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  let resolve!: (value: Response) => void;
+  handle = (url, options) => options.method === "POST" ? new Promise<Response>(r => { resolve = r; }) : url.includes("/refresh/") ? json({ ...pending, status: "running" }) : json({ datasets: [] });
+  refreshSubmit();
+  await waitFor(() => expect(resolve).toBeTypeOf("function"));
+  fireEvent.click(screen.getByRole("button", { name: "Datasets" }));
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  expect(screen.getByRole("button", { name: "Starting refresh…" })).toBeDisabled();
+  await act(async () => resolve(json(pending, 202)));
+  expect(await screen.findByText("Job ID: local-job")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Datasets" }));
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  expect(screen.getByText("Job ID: local-job")).toBeVisible();
+  expect(calls.filter(c => c.url === "/api/refresh" && c.options.method === "POST")).toHaveLength(1);
+});
+
+test.each([409, 0])("lost admission %s recovers the active job", async status => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  handle = (url, options) => {
+    if (options.method === "POST") { if (!status) throw new TypeError("lost response"); return json({}, status); }
+    return json({ ...pending, status: "running" });
+  };
+  refreshSubmit(); await screen.findByRole("alert");
+  expect(screen.getByRole("button", { name: "Start refresh" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Find active refresh" }));
+  expect(await screen.findByText("Job ID: local-job")).toBeVisible();
+  expect(calls.some(c => c.url === "/api/refresh/active")).toBe(true);
+});
+
+test("404 offers explicit unknown-outcome reset without claiming failure", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  handle = (_, options) => options.method === "POST" ? json(pending, 202) : json({}, 404);
+  refreshSubmit();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Publication outcome is unknown");
+  expect(screen.getByRole("button", { name: "Refresh outcome unknown" })).toBeDisabled();
+  expect(screen.queryByText("Not published")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Clear unavailable job tracking" }));
+  expect(screen.getByRole("button", { name: "Start refresh" })).toBeEnabled();
+  expect(screen.queryByText("Job ID: local-job")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Start refresh" }));
+  await waitFor(() => expect(calls.filter(c => c.url === "/api/refresh" && c.options.method === "POST")).toHaveLength(2));
+});
+
+test.each([0, 503])("transient status failure %s keeps tracking and blocks admission", async status => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  handle = (_, options) => {
+    if (options.method === "POST") return json(pending, 202);
+    if (!status) throw new TypeError("temporary");
+    return json({}, status);
+  };
+  refreshSubmit(); await screen.findByRole("button", { name: "Retry status" });
+  expect(screen.getByText("Job ID: local-job")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Refresh in progress…" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Clear unavailable job tracking" })).not.toBeInTheDocument();
+});
+
+test.each([true, false])("bootstrap date clears only on confirmed publication %s", async published => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  handle = (_, options) => options.method === "POST" ? json(pending, 202) : json({ ...pending,
+    status: published ? "succeeded" : "failed", published, outcome: published ? "published" : null });
+  refreshSubmit(); await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(published ? "succeeded" : "failed"));
+  const start = screen.getByLabelText("Initial start date (optional)");
+  await waitFor(() => expect(start).toHaveValue(published ? "" : "2026-01-01"));
+  fireEvent.click(screen.getByRole("button", { name: "Start refresh" }));
+  await waitFor(() => expect(calls.filter(c => c.url === "/api/refresh" && c.options.method === "POST")).toHaveLength(2));
+  const body = JSON.parse(calls.filter(c => c.url === "/api/refresh" && c.options.method === "POST")[1].options.body as string);
+  expect(body.start_date).toBe(published ? undefined : "2026-01-01");
+});
+
+test("late admission response cannot restore a previous session's tracking", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  let resolve!: (response: Response) => void;
+  handle = (_, options) => options.method === "POST" ? new Promise<Response>(r => { resolve = r; }) : json({ datasets: [] });
+  refreshSubmit(); await waitFor(() => expect(resolve).toBeTypeOf("function"));
+  fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+  await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  await act(async () => resolve(json(pending, 202)));
+  expect(screen.queryByText("Job ID: local-job")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Start refresh" })).toBeEnabled();
+});
+
+test("no active job recovery does not claim the lost job failed", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  handle = (_, options) => options.method === "POST" ? json({}, 409) : json(null);
+  refreshSubmit(); await screen.findByRole("alert");
+  fireEvent.click(screen.getByRole("button", { name: "Find active refresh" }));
+  expect(await screen.findByText(/No active job is known/)).toHaveTextContent("publication outcome remains unknown");
+  expect(screen.getByRole("button", { name: "Start refresh" })).toBeEnabled();
+});
+
+test("late active-job lookup cannot restore tracking after logout", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  let resolve!: (value: Response) => void;
+  handle = () => new Promise<Response>(r => { resolve = r; });
+  fireEvent.click(screen.getByRole("button", { name: "Find active refresh" }));
+  await waitFor(() => expect(resolve).toBeTypeOf("function"));
+  fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+  role = "viewer"; handle = () => json({ datasets: [] }); await login();
+  await act(async () => resolve(json(pending)));
+  expect(screen.queryByText("Job ID: local-job")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Find active refresh" })).not.toBeInTheDocument();
+});
+
+test("a no-op outcome does not claim a bootstrap publication", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  handle = (_, options) => options.method === "POST" ? json(pending, 202) : json({ ...pending,
+    status: "succeeded", published: false, outcome: "no_op" });
+  refreshSubmit(); await screen.findByText("Publication: No changes needed");
+  expect(screen.getByLabelText("Initial start date (optional)")).toHaveValue("2026-01-01");
+});

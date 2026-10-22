@@ -86,6 +86,7 @@ def test_invalid_token_cannot_start_or_poll(environment):
     credential = {'Authorization': 'Bearer invalid'}
     assert client.post('/refresh', json=BODY, headers=credential).status_code == 401
     assert client.get('/refresh/anything', headers=credential).status_code == 401
+    assert client.get('/refresh/active', headers=credential).status_code == 401
     assert not control['admitted'] and not control['lookups'] and not control['calls']
 
 
@@ -305,3 +306,31 @@ def test_shutdown_rejects_new_admission_and_fresh_manager_has_no_old_jobs(tmp_pa
             restarted.get(job.job_id)
     finally:
         restarted.close()
+
+
+@pytest.mark.parametrize('role,status', [(None, 401), ('viewer', 403), ('analyst', 403)])
+def test_active_job_authorization_precedes_lookup(environment, settings, monkeypatch, role, status):
+    client, control = environment
+    monkeypatch.setattr(refresh_jobs.RefreshJobs, 'active', lambda _: pytest.fail('Unauthorized lookup'))
+    assert client.get('/refresh/active', headers=headers(settings, role) if role else {}).status_code == status
+    assert not control['calls']
+
+
+def test_active_lookup_returns_only_current_job_and_keeps_conflict(environment, settings):
+    client, control = environment
+    credential = headers(settings)
+    assert client.get('/refresh/active', headers=credential).json() is None
+    def blocked(*_):
+        control['entered'].set()
+        assert control['release'].wait(3)
+        return success()
+    control['runner'] = blocked
+    admitted = client.post('/refresh', json=BODY, headers=credential).json()
+    assert control['entered'].wait(2)
+    response = client.get('/refresh/active', headers=credential)
+    assert response.status_code == 200 and response.json()['job_id'] == admitted['job_id']
+    assert response.headers['cache-control'] == 'no-store'
+    assert client.post('/refresh', json=BODY, headers=credential).status_code == 409
+    control['release'].set()
+    assert finish(client, settings, admitted['job_id'])['status'] == 'succeeded'
+    assert client.get('/refresh/active', headers=credential).json() is None
