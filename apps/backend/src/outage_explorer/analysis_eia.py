@@ -255,6 +255,26 @@ def analyse(source: dict) -> dict:
     return result
 
 
+def tukey_summary(values: list[Decimal]) -> dict:
+    """Linear interpolation at (n-1)*p (type 7); strict 1.5-IQR fences.
+
+    Empty samples have no fences. Singleton/constant samples have coincident
+    fences and no outliers. This is descriptive screening, not significance.
+    """
+    ordered = sorted(values)
+    if not ordered:
+        return {'count': 0, 'q1': None, 'q3': None, 'upper_fence': None}
+    with localcontext() as context:
+        context.prec = 60
+        def quantile(p):
+            index = Decimal(len(ordered) - 1) * p
+            lower = int(index)
+            return ordered[lower] + (ordered[min(lower + 1, len(ordered) - 1)] - ordered[lower]) * (index - lower)
+        q1, q3 = quantile(Decimal('0.25')), quantile(Decimal('0.75'))
+        return {'count': len(ordered), 'q1': q1, 'q3': q3,
+                'upper_fence': q3 + Decimal('1.5') * (q3 - q1)}
+
+
 def inspect_temporal(source: dict) -> dict:
     """Offline candidate inventory, not an assertion that capacity must be stable.
 
@@ -275,6 +295,7 @@ def inspect_temporal(source: dict) -> dict:
               'percentage_candidates': [], 'undefined_ratios': [], 'skipped_intervals': [],
               'source_percentage_decimal_places': {}, 'maximum_percentage_gaps': {},
               'baseline_anomaly_counts': {name: len(rows) for name, rows in baseline['anomalies'].items()}}
+    result['route_counts'] = baseline['routes']
     observations = {}
     # analyse() checks checksums, exact queries, metadata, required values,
     # date coverage, and uniqueness before any candidate comparison is allowed.
@@ -360,6 +381,37 @@ def inspect_temporal(source: dict) -> dict:
             if parent is not None and parent.get('facilityName') != row.get('facilityName'):
                 result['cross_grain_label_mismatches'].append({'outage_date': day, 'facility': facility,
                     'generator': generator, 'facility_name': parent.get('facilityName'), 'generator_facility_name': row.get('facilityName')})
+    daily_changes = []
+    national = observations['us-nuclear-outages']
+    generators = observations['generator-nuclear-outages']
+    with localcontext() as context:
+        context.prec = 60
+        for before, after in zip(sorted(national), sorted(national)[1:]):
+            if (after - before).days != 1:
+                continue
+            old, new = national[before][()], national[after][()]
+            common = generators.get(before, {}).keys() & generators.get(after, {}).keys()
+            contributions = []
+            for facility, generator in sorted(common):
+                a, b = generators[before][facility, generator], generators[after][facility, generator]
+                delta = Decimal(b['outage']) - Decimal(a['outage'])
+                if delta:
+                    contributions.append({'facility': facility, 'generator': generator,
+                        'previous_outage_mw': a['outage'], 'outage_mw': b['outage'], 'change_mw': delta})
+            delta = Decimal(new['outage']) - Decimal(old['outage'])
+            daily_changes.append({'previous_date': before, 'outage_date': after,
+                'previous_outage_mw': old['outage'], 'outage_mw': new['outage'],
+                'change_mw': delta, 'absolute_change_mw': abs(delta),
+                'generator_membership_unchanged': generators.get(before, {}).keys() == generators.get(after, {}).keys(),
+                'generator_change_sum_mw': sum((r['change_mw'] for r in contributions), Decimal(0)),
+                'generator_contributions': contributions})
+        screening = tukey_summary([r['absolute_change_mw'] for r in daily_changes])
+        for row in daily_changes:
+            row['above_upper_fence'] = row['absolute_change_mw'] > screening['upper_fence']
+    result['national_daily_outage_changes'] = daily_changes
+    result['outage_change_screening'] = {**screening,
+        'method': 'absolute adjacent national MW changes; type-7 linear quartiles; strictly above Q3 + 1.5 IQR',
+        'classification': 'exploratory_operational_outlier_not_source_defect'}
     return result
 
 

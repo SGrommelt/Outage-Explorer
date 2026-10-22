@@ -43,7 +43,7 @@ Additional local checks validated 85 relative links/anchors, exactly seven decis
 
 - FastAPI integration tests use ASGI TestClient; frontend tests use jsdom/mock HTTP. Neither equals real browser end-to-end automation or a fresh-clone installation.
 - Production ingestion intentionally rejects the unresolved facility total discrepancy. A successful live production publication/refresh is not claimed; the demo's failed refresh is deliberate.
-- Three independently verified real anomalies remain missing; matching aggregates do not prove complete source coverage.
+- Three reproducible findings are documented: one API inconsistency and two unusual valid observations. No source-data defects are established; matching aggregates do not prove source completeness.
 - Crash tests inject signals/errors and inspect sync ordering; they do not establish universal hardware/power-loss durability.
 - No tracked agent-session/prompt export was found during the documentation audit. If authentic logs are supplied, include only a short sanitized excerpt with context/revision; exclude secrets, private paths, and unrelated material. Do not fabricate a reconstructed transcript.
 - Preserve incremental Git history for submission. Optional prompt evidence does not replace the required confirmed AI-mistake explanation.

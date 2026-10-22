@@ -95,4 +95,4 @@ The isolated `analysis_eia` archives and the explicitly separate read-only demo 
 
 ## Technical decisions and findings
 
-The seven choices, rejected alternatives, and rationales are maintained only in [DECISIONS.md](../DECISIONS.md). [FINDINGS.md](../FINDINGS.md) contains the real-data comparisons, unresolved source-completeness limitation, anomaly shortfall, and offline reproduction commands.
+The seven choices, rejected alternatives, and rationales are maintained only in [DECISIONS.md](../DECISIONS.md). [FINDINGS.md](../FINDINGS.md) contains the real-data comparisons, unresolved source-completeness limitation, three classified anomaly findings, and offline reproduction commands.

@@ -4,7 +4,7 @@
 
 Outage Explorer is an Arkham Technologies take-home application for exploring EIA nuclear outages at national, facility, and generator grains.
 
-**Start with the read-only real-data demo below.** It uses saved September 22–October 21, 2026 observations and needs no EIA API key. Source completeness is unverified; strict production publication remains blocked by an unresolved facility API count discrepancy. The requirement for three independent verified real anomalies is also incomplete.
+**Start with the read-only real-data demo below.** It uses saved September 22–October 21, 2026 observations and needs no EIA API key. Source completeness is unverified; strict production publication remains blocked by an unresolved facility API count discrepancy. Three reproducible findings distinguish an API inconsistency from unusual, internally consistent observations; none proves a source-data defect.
 
 ## Features and roles
 
@@ -121,7 +121,7 @@ Demo data stays under Git-ignored `data/eia-demo`; there is no production adopti
 ## Known limitations
 
 - Facility responses report 2,850 records but return 1,650 unique facility-day rows for the saved window, then an empty terminal page. The cause and authoritative source coverage are unresolved. Related grains can share omissions even when MW totals match.
-- The 30-day report is reproducible, but **three independent real anomalies have not been verified**. Normal capacity changes, rounding, and synthetic regressions are not counted as defects.
+- The 30-day report documents three distinct anomaly findings under the broad challenge wording: one API count inconsistency and two unusual observations, not three confirmed source-data defects. Statistical conclusions are limited to this window.
 - Natural keys and source lifecycle/null/rating assumptions remain provisional across full history. Offset pagination has no source snapshot isolation; older corrections beyond refresh overlap are not automatically revisited.
 - Full snapshot validation and cumulative refresh use memory/work proportional to history. SQL has a result cap, but no hard execution-time budget. Separate HTTP requests may observe different published versions.
 - Refresh jobs are in-process, single-worker, and not restart-durable. Snapshot retention/garbage collection, distributed scheduling, and automatic schema migration are intentionally absent. Filesystem durability depends on the OS/device honoring fsync.
@@ -131,7 +131,7 @@ Demo data stays under Git-ignored `data/eia-demo`; there is no production adopti
 ## Documentation links
 
 - [DECISIONS.md](DECISIONS.md) — seven choices, alternatives, and rationales.
-- [FINDINGS.md](FINDINGS.md) — real observations, comparisons, anomaly shortfall, and offline reproduction.
+- [FINDINGS.md](FINDINGS.md) — real observations, comparisons, three classified anomaly findings, and offline reproduction.
 - [NOTES.md](NOTES.md) — AI assistance, review/verification, and outstanding attribution confirmation.
 - [Data model and ER diagram](docs/DATA_MODEL.md#logical-er-diagram) — exact types, keys, relationships, and validation.
 - [Ingestion runbook](docs/EIA_INCREMENTAL_REFRESH.md) — independent windows, incremental refresh, audits, recovery.

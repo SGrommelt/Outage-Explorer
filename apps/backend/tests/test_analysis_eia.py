@@ -320,3 +320,52 @@ def test_real_temporal_inspection_has_no_membership_or_percentage_defect():
     assert result['source_percentage_decimal_places'] == summary['source_percentage_decimal_places']
     assert json.loads(analysis.encoded(result['maximum_percentage_gaps'])) == summary['maximum_percentage_gaps']
     assert len(result['capacity_changes']) == 126  # One coordinated step across three grains, not 126 anomalies.
+
+
+@pytest.mark.parametrize('values,expected', [
+    ([], (0, None, None, None)),
+    (['7'], (1, '7', '7', '7')),
+    (['2', '2', '2'], (3, '2', '2', '2')),
+    (['0', '10'], (2, '2.5', '7.5', '15')),
+    (['0', '1', '2', '3', '20'], (5, '1', '3', '6')),
+])
+def test_type7_quartiles_and_small_samples(values, expected):
+    result = analysis.tukey_summary([Decimal(x) for x in values])
+    count, *numbers = expected
+    assert result == dict(zip(('count', 'q1', 'q3', 'upper_fence'),
+                             [count, *[Decimal(x) if x is not None else None for x in numbers]]))
+
+
+def test_synthetic_outage_screening_is_strict_and_constant_samples_have_no_outliers(source):
+    result = analysis.inspect_temporal(source)
+    assert result['outage_change_screening']['upper_fence'] == 0
+    assert not any(r['above_upper_fence'] for r in result['national_daily_outage_changes'])
+    row = source['routes'][ROUTES[0]]['pages'][0]['response']['data'][10]
+    row['outage'] = '50'
+    rehash_pages(source)
+    result = analysis.inspect_temporal(source)
+    assert sum(r['above_upper_fence'] for r in result['national_daily_outage_changes']) == 2
+    assert [r['change_mw'] for r in result['national_daily_outage_changes'] if r['above_upper_fence']] == [20, -20]
+
+
+def test_recorded_three_findings_are_reproducible():
+    path = Path(__file__).resolve().parents[3] / 'docs/evidence/eia-real-30-days-source.json.gz'
+    result = analysis.inspect_temporal(json.loads(gzip.decompress(path.read_bytes())))
+    counts = result['route_counts'][ROUTES[1]]
+    assert counts['received_rows'] == counts['unique_keys'] == counts['validated_rows'] == 1650
+    assert set(counts['reported_totals']) == {2850} and counts['terminal_empty_page']
+    assert counts['reported_totals'][0] - counts['received_rows'] == 1200
+    assert [r['changed_stable_keys'] for r in result['capacity_decomposition']] == [1, 47, 78]
+    assert all(r['total_change_mw'] == Decimal('2436.2') for r in result['capacity_decomposition'])
+    assert not result['membership_changes']
+    screening = result['outage_change_screening']
+    assert (screening['count'], screening['q1'], screening['q3'], screening['upper_fence']) == (
+        29, Decimal('48.872'), Decimal('1047.235'), Decimal('2544.7795'))
+    flagged = [r for r in result['national_daily_outage_changes'] if r['above_upper_fence']]
+    assert len(flagged) == 1
+    row = flagged[0]
+    assert (row['previous_date'], row['outage_date']) == (date(2026, 10, 2), date(2026, 10, 3))
+    assert (row['previous_outage_mw'], row['outage_mw']) == ('12295.214', '16107.683')
+    assert row['change_mw'] == row['generator_change_sum_mw'] == Decimal('3812.469')
+    assert row['generator_membership_unchanged']
+    assert len(row['generator_contributions']) == 9
