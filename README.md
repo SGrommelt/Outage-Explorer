@@ -388,6 +388,49 @@ ORDER BY f.outage_date, f.facility_id;
 
 The final query preserves one row per facility-day; a missing child group stays null. Summing reported MW observations across dates is not measured energy, and source percentages are not additive. The offline model tests cover both snapshot manifest versions, types/precision, keys and nullable labels, example query shapes, pointer changes during opening, unreferenced data, schema/publication corruption, and Hive-style/quoted paths. Run them with `apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_analytics.py`.
 
+## Reconciliation API and workspace (US-07)
+
+**Reconciliation** navigation is visible to Analyst and Admin. Both endpoints below require those roles and authorization for all three analytical datasets **before opening any production/demo connection**. Viewer receives 403 even through direct URLs; missing/invalid/expired authentication receives 401. The endpoints reuse `reconcile_daily`, `reconcile_facilities`, and the existing diagnostic checks on a single read-only, pinned connection per request. They never alter files, audits, pointers, or watermarks.
+
+```sh
+# Default: latest 30 available days, clipped to the earliest available date.
+curl -H "Authorization: Bearer $ACCESS_TOKEN" http://127.0.0.1:8000/reconciliation
+# Explicit inclusive window; maximum 31 days.
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  'http://127.0.0.1:8000/reconciliation?start_date=2026-09-22&end_date=2026-10-21'
+# Selected-date facility/generator comparisons, default 25 rows, maximum 100.
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  'http://127.0.0.1:8000/reconciliation/facilities?date=2026-10-21&page=1&page_size=25'
+```
+
+`GET /reconciliation` accepts optional `start_date` and `end_date`. Bounds are derived from the union of available dates across the three views, not hardcoded demo dates. End defaults to the latest observed date. Start defaults to 29 days before end, clipped to available start when applicable. An explicitly supplied start is preserved; supply an end if that would otherwise exceed 31 days or follow the available end. Explicit windows outside local coverage are allowed and show unavailable days, not invented zero measurements. An entirely empty readable source with no explicit bounds returns an empty result and null available bounds. Missing/incompatible published/demo data returns a generic 503 instead.
+
+The daily response contains `start_date`, `end_date`, `available_start`, `available_end`, `source_completeness`, `summary`, and `rows`. `summary` includes `days_requested`, `days_compared` (matching plus difference days), `days_matching`, `days_with_differences`, and `days_unavailable` (missing-level or invalid-data days). Each requested calendar date gets one row, including dates absent at every grain. Each row includes:
+
+- National reported, independently summed facility, and independently summed generator **capacity MW and outage MW**; all six pairwise signed gaps (facility−national, generator−national, generator−facility for each measure).
+- `national_count`, `facility_count`, `generator_count`, `missing_facility_keys` (generator groups without parent observations), and `missing_generator_groups` (facilities without children), and `facility_groups_with_differences` (child/parent MW gaps that can cancel at the national level). Group comparison counts are null when invalid data makes those comparisons ambiguous.
+- `status` (`equal`, `difference`, `missing_level`, `invalid_data`), `numeric_aggregates_match` (boolean or null when unavailable), and machine-readable `reasons` with user-readable descriptions. Numeric equality can coexist with a key difference or offsetting facility-level differences, such as an unmatched zero-valued group; that day is still a `difference`.
+
+Decimal values serialize as exact strings; dates are ISO strings and missing/withheld values are null. Gap names `facility_minus_national_mw`, `generator_minus_national_mw`, and `generator_minus_facility_mw` refer to outage; the corresponding capacity keys are `facility_capacity_minus_national_mw`, `generator_capacity_minus_national_mw`, and `generator_capacity_minus_facility_mw`. No tolerance is applied: representable nonzero micro-MW gaps remain visible.
+
+`GET /reconciliation/facilities` requires `date`, with `page` starting at 1 and `page_size` 1–100. It returns `date`, `page`, `page_size`, `total`, `source_completeness`, and bounded `rows`, ordered by facility identifier. Each row contains parent/child capacity and outage, signed generator−facility gaps, generator count, comparison status, and reasons. The helper computes one day's groups on the server, then slices the response; it never sends the whole period's thousands of facility rows by default. Pages beyond the last return empty rows. Separate requests may observe newer production publications; they are not pinned across page/date changes. The static demo remains on its one pinned evidence version.
+
+| Reason code | Evidence-based meaning |
+| --- | --- |
+| `aggregates_match` | Numeric aggregates and observed facility keys agree; this is not independent fleet-coverage certification. |
+| `missing_national_coverage`, `missing_facility_coverage`, `missing_generator_coverage` | That grain has no observation for the requested local date. This alone does not prove an EIA omission. |
+| `missing_facility_key`, `missing_generator_group` | One observed side lacks the corresponding date/facility key on the other side; no lifecycle/deletion cause is inferred. |
+| `facility_group_mismatch` | At least one facility differs from its generator sums even if daily differences cancel; inspect the selected date. |
+| `capacity_mismatch`, `outage_mismatch` | Exact parent/independently summed child MW values differ. |
+| `invalid_values`, `duplicate_keys`, `unsupported_values` | Ambiguous or unsupported observations cause the affected comparison's measures/gaps to be withheld, not silently summed/deduplicated. Range flags are diagnostic interpretation limits, not newly asserted EIA constraints. |
+| `unknown_cause` | A difference is observed, but definitions, reporting timing, revisions, or coverage are unverified possible explanations—not established causes. |
+
+Invalid/reversed/overlong dates, invalid pagination, duplicate or unknown parameters return 400. Errors never expose internal paths or raw engine details; successful responses use `no-store` and vary by Authorization. Strict snapshot validation normally rejects malformed/null/duplicate physical records before comparison, yielding 503. Tests deliberately modify temporary in-memory views to exercise defensive difference/unavailable states; no malformed production snapshot is accepted.
+
+The UI shows period summary counts, all three daily grains/gaps/counts, evidence-based explanations, and a selected-date facility table with Previous/Next controls. Editing dates hides old results until applied; changing the detail date resets pagination. Network/error/empty states are explicit, expired sessions use the centralized 401 handler, and logout/account changes clear and abort old requests. MW formatting groups digits and removes insignificant trailing zeros **without binary-float conversion or rounding**, preserving all significant API digits. Tables scroll horizontally on small screens.
+
+The backend always returns `source_completeness.independently_verified=false`. Demo mode prominently explains the unresolved facility reported-total mismatch using app-owned mode metadata, even without the frontend demo-label flag; production mode describes a validated publication without claiming an independently verified EIA inventory. All **30 real daily comparisons match**, and all **1,650 real facility-day comparisons match** in the archive; the UI initially receives just 25 of 55 facility groups on a selected date. No real differences or anomalies are fabricated. Production completeness validation, demo isolation, and publication/watermark behavior are unchanged. Tests cover real demo results plus synthetic missing dates/keys, micro-MW mismatches, duplicates/invalid values, zero-valued orphans, and authorization before any read.
+
 ## Reconciliation and anomaly diagnostics
 
 `outage_explorer.diagnostics` queries an existing connection from `open_analytics`. It does not reopen the pointer, repair audits, alter Parquet, or change extraction rules. All results therefore stay on the same published snapshot as the analytical views. Functions return dictionaries/lists with native Python dates and exact `Decimal` measurements; an eventual API must serialize them deliberately without converting decimals to floats.

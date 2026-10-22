@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.concurrency import run_in_threadpool
 
-from outage_explorer.api import auth, datasets, health, metrics, query, refresh
+from outage_explorer.api import auth, datasets, health, metrics, query, refresh, reconciliation
 from outage_explorer.demo_data import DEFAULT_DEMO_ROOT, NOTICE, open_demo
 from outage_explorer.main import invalid_request
 from outage_explorer.refresh_jobs import RefreshJobs
@@ -43,8 +43,9 @@ def create_demo_app(root: Path = DEFAULT_DEMO_ROOT) -> FastAPI:
             await run_in_threadpool(jobs.close)
     application = FastAPI(title='Outage Explorer DEMO — completeness unverified', lifespan=lifespan)
     application.state.analytics_opener = lambda: open_demo(root)
+    application.state.data_mode = 'demo'
     application.state.dataset_notice = NOTICE + ' '
-    for module in (health, auth, datasets, query, metrics, refresh):
+    for module in (health, auth, datasets, query, metrics, refresh, reconciliation):
         application.include_router(module.router)
     application.add_exception_handler(RequestValidationError, invalid_request)
 

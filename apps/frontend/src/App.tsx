@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { SessionProvider, useSession } from "@/components/session";
 import { Button } from "@/components/ui/button";
+import { Reconciliation } from "@/components/reconciliation";
 import { Datasets } from "@/components/datasets";
 import { Refresh } from "@/components/refresh";
 import { FleetShare } from "@/components/fleet-share";
@@ -36,7 +37,7 @@ function Login() {
   </main>;
 }
 
-type Section = "datasets" | "sql" | "refresh" | "fleet";
+type Section = "datasets" | "sql" | "refresh" | "fleet" | "reconciliation";
 function Shell() {
   const { user, logout } = useSession();
   const [section, setSection] = useState<Section>("datasets");
@@ -45,6 +46,7 @@ function Shell() {
     { id: "datasets", label: user.role === "viewer" ? "National datasets" : "Datasets" },
     { id: "fleet", label: "Fleet offline share" },
     ...(user.role !== "viewer" ? [{ id: "sql" as const, label: "SQL Explorer" }] : []),
+    ...(user.role !== "viewer" ? [{ id: "reconciliation" as const, label: "Reconciliation" }] : []),
     ...(user.role === "admin" ? [{ id: "refresh" as const, label: "Refresh" }] : []),
   ];
   const active = navigation.find(item => item.id === section) ?? navigation[0];
@@ -63,7 +65,7 @@ function Shell() {
       <main className="min-w-0 rounded-xl border border-slate-200 bg-white p-6 sm:p-9">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Workspace</p>
         <h1 className="mt-3 text-2xl font-semibold">{active.label}</h1>
-        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : active.id === "fleet" ? <FleetShare /> : user.role === "admin" ? <Refresh /> : null}
+        {active.id === "datasets" ? <Datasets /> : active.id === "sql" && user.role !== "viewer" ? <SqlExplorer /> : active.id === "reconciliation" && user.role !== "viewer" ? <Reconciliation /> : active.id === "fleet" ? <FleetShare /> : user.role === "admin" ? <Refresh /> : null}
       </main>
     </div>
   </div>;
