@@ -1,5 +1,7 @@
 # Initial setup review — 2026-10-20
 
+**Historical record:** versions, test counts, advisory results, and scope statements below describe initial setup only. They are not current validation/security results or an authorship claim. See [Engineering Notes](../NOTES.md) for verification scope and [README](../README.md) for current startup.
+
 ## Backend environment
 
 Created `apps/backend/.venv` using Python 3.12.15 and installed the backend as an editable package with its `dev` extra:

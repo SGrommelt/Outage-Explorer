@@ -1,8 +1,10 @@
-# Incremental EIA refresh and ingestion history
+# EIA ingestion, incremental refresh, and recovery
+
+This is the operational runbook for both cumulative refresh and independent date-window extraction. See [implemented schemas](DATA_MODEL.md), [observed wire metadata](EIA_SCHEMA.md), and [real-data findings](../FINDINGS.md).
 
 The refresh command reuses `extract_eia.extract_route`, including its strict date, numeric, natural-key, schema, pagination, total, and daily-coverage checks. It adds cumulative merging, per-route watermarks, run audits, and one atomic publication across all three routes. There are no new dependencies or distributed services.
 
-**The [documented facility discrepancy](EIA_PAGINATION_INVESTIGATION.md) is not bypassed.** Recorded responses with 55 rows against `total=95` still fail before publication. These commands describe the workflow, not evidence of a successful live refresh. This feature was tested offline only; no additional EIA requests or historical downloads were made.
+**The [documented facility discrepancy](EIA_PAGINATION_INVESTIGATION.md) is not bypassed.** Recorded responses with 55 rows against `total=95` still fail before publication. These commands describe the workflow, not evidence of a successful live refresh. Incremental success/recovery is tested offline; a successful live production refresh has not been demonstrated. The separate recorded source investigations are historical evidence, not accepted publications.
 
 ## Commands from the repository root
 
@@ -48,7 +50,7 @@ The original `extract_eia` command still produces independent window snapshots. 
 - `--start`: required only for a first run without a base snapshot.
 - `--overlap-days`: defaults to 7; allowed range 0–3660. This counts previously published dates, including the watermark date. All newly requested dates through `--end` are also fetched.
 - `--conflict-policy`: `reject` (default) or explicit `replace`.
-- `--env-file`, `--page-size`, `--max-pages`, `--attempts`, `--backoff`, and `--timeout` retain the extraction options and bounds. Retry/page limits and total consistency checks are unchanged.
+- `--env-file`, `--page-size`, `--max-pages`, `--attempts`, `--backoff`, and `--timeout` use the [shared extraction options and bounds](#shared-extraction-options-and-validation). Retry/page limits and total consistency checks are unchanged.
 
 For dataset start `S`, latest watermark `W`, and overlap `N`, the computed start is `max(S, W + 1 day - N days)`. For example, after publishing through October 20, overlap 0 requests October 21 onward; overlap 1 starts October 20; overlap 2 starts October 19. Larger overlaps clip to the first stored date.
 
@@ -143,3 +145,86 @@ Limits remain explicit:
 - Merging validates and rewrites the entire cumulative snapshot in local memory. This is appropriate for small take-home runs, not an arbitrarily large history service.
 - Locking, rename, and directory fsync assume a local POSIX filesystem. Windows, object storage, and unreliable network filesystems are not supported.
 - No scheduler, automated historical backfill, schema migration, old-run garbage collection, or distributed coordination was added.
+
+## Shared extraction options and validation
+
+Configure `EIA_API_KEY` in `apps/backend/.env` or the environment. Exported values take precedence; interpolation is disabled. The default env path is resolved from the module location, not the working directory. Keys are never command-line arguments or logged. Both commands use HTTPX, PyArrow, and python-dotenv already declared by the backend.
+
+| Option | Default | Bounds / behavior |
+| --- | --- | --- |
+| `--page-size` | 500 | 1–5000 rows per request |
+| `--max-pages` | 10000 | 1–100000 per route; exhaustion fails without publication |
+| `--attempts` | 4 | 1–6 total attempts per request, including the first |
+| `--backoff` | 1 second | Finite 0–30; exponential waits capped at 30 seconds |
+| `--timeout` | 30 seconds | 1–60 seconds per HTTP operation |
+| `--env-file` | `apps/backend/.env` | Explicit module-relative default |
+| `--output-dir` | Refresh: `data/eia/incremental`; windows: `data/eia` | Separate local roots supporting atomic rename |
+
+All three routes use fixed inclusive start/end dates, all three known measures, and ascending `period`, then `facility`/`generator` where applicable. Offset advances by actual received row count. A short page does not imply completion while the reported total says rows remain. Totals must be stable and equal received rows; empty routes, early empty pages, oversize/malformed pages, duplicate candidate keys (including identical duplicates), and missing route-days fail. This conservative acceptance policy is not independent authoritative source-coverage certification.
+
+Metadata must advertise daily data, known dimensions, measures, and expected units; response frequency/date format and API-version consistency are checked. Unexpected row fields require review. The [physical schema and validation rules](DATA_MODEL.md#invalid-records-duplicates-and-relationships) retain exact dates, opaque IDs, optional names, non-null decimal128(24,6) measures, and explicit units. Native decimal JSON numbers, integers, and decimal strings avoid intermediate float conversion. Null/blank/nonfinite/unrepresentable measures fail rather than rounding or zero-filling; finite negative values are retained pending source interpretation. Names may be absent/null without changing identity.
+
+Validation/writing is page by page, with key/date sets in memory. Invalid rows reject the whole snapshot and are located by route/page offset/row index with a safe reason; raw values are not retained in a rejection file. Required units are `megawatts` for capacity/outage and `percent` for percentOutage. The fixed source field names and non-null unit columns are documented in the [model](DATA_MODEL.md#grains-exact-types-and-source-mapping).
+
+Only transient network errors/timeouts, HTTP 429, and HTTP 5xx are retried. Default delays are 1, 2, and 4 seconds. Retry-After seconds/HTTP dates are honored within the 30-second delay cap; longer server waits are clamped and sustained throttling can exhaust the budget. Authentication errors, redirects, malformed JSON/envelopes, warnings, validation errors, and completeness failures are not automatically retried. Fresh HTTP connections mitigate unexplained intermittent reuse timeouts; TLS verification stays enabled.
+
+JSON-line stderr logs report windows, page counts/totals, retries/delays, failures, elapsed time, and publication. They exclude request URLs, keys, raw rows, and remote error bodies; HTTPX/HTTPCore logging is disabled. CLI exits are 0 for successful completion (including refresh no-op), 1 for failure, and 130 for interruption. Errors after pointer commit can leave a complete snapshot current despite a failing exit; inspect the authoritative pointer/metadata rather than infer rollback from exit status.
+
+## Independent date-window extraction
+
+This legacy workflow remains separate from cumulative refresh. Run from the repository root after installing the backend and configuring credentials. Start with a small window; no full-history download has been run.
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.extract_eia \
+  --start 2026-10-20 --end 2026-10-20 \
+  --page-size 25 --attempts 3 --timeout 20
+```
+
+`--start` and `--end` are required inclusive daily ISO dates. The historical example currently fails facility completeness, as documented in [FINDINGS.md](../FINDINGS.md#verified-api-discrepancy-and-source-completeness-limitation); it is not a working-demo startup command.
+
+```text
+data/eia/
+  2026-10-20_2026-10-20/
+    current.json                   # {"run": "runs/<unique-run-id>"}
+    runs/<unique-run-id>/
+      us-nuclear-outages.parquet
+      facility-nuclear-outages.parquet
+      generator-nuclear-outages.parquet
+      manifest.json
+```
+
+A successful schema-version-1 manifest records inclusive dates, creation time, API versions, keys, page/record counts, and relative filenames, without credentials/request echoes. Parquet uses Zstandard compression; footers and Arrow schemas are checked before publication.
+
+All three files and the manifest are staged, closed, checked, and fsynced. A unique staging directory is renamed to an immutable run; a flushed temporary pointer is atomically replaced over `current.json`. Readers resolve that pointer once. Pre-publication exceptions preserve existing data. Route validation failures are accumulated to diagnose other routes; storage errors/interruption abort immediately. Post-publication storage errors/signals cannot undo the committed pointer.
+
+Repeat runs replace the current logical dataset without appending rows; unchanged sources therefore remain logically idempotent, although a new complete version is retained. Independent-window concurrent runs have unique staging/run/pointer names and last-successful-publisher semantics; they do not use the cumulative refresh lock. Different or overlapping windows are independent, not a combined history. Never use this writer to update the cumulative root or glob across runs/windows.
+
+After a successful window, trusted local code can read the physical Parquet file:
+
+```python
+import json
+from pathlib import Path
+import pyarrow.parquet as pq
+
+window = Path("data/eia/2026-10-20_2026-10-20")
+run = window / json.loads((window / "current.json").read_text())["run"]
+national = pq.ParquetFile(run / "us-nuclear-outages.parquet").read()
+```
+
+Ordinary exceptions/SIGINT clean staging; SIGKILL/crashes or failures between run rename and pointer replacement can leave unreferenced staging/orphan runs. Readers ignore them and old successful runs are retained. There is no garbage collection, window resume checkpoint, or automatic history merge. Candidate-key sets grow with the window. Local output is Git-ignored. Neither stable totals nor route-day coverage proves entity lifecycle coverage; same-count source revisions during pagination may escape detection. Review legitimate historical null/precision/schema variants before changing strict policies.
+
+## Diagnostic collection and demonstration
+
+The [schema probe](EIA_SCHEMA.md#evidence-and-reproduction), [dated pagination investigation](EIA_PAGINATION_INVESTIGATION.md), and [30-day findings/replay](../FINDINGS.md#offline-reproduction) retain the historical live results and regression evidence. They do not authorize production acceptance. For the working isolated app, use the [README demo commands](../README.md#quick-start--working-real-data-demo), not either production ingestion command. Demo preparation writes separate `demo.json`/Parquet files, no production pointers/audits/watermarks, and demo refresh fails read-only.
+
+If a separately authorized new diagnostic collection is necessary, use a fresh filename under `eia-analysis` (these commands make live requests):
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.analysis_eia fetch \
+  --output data/eia-analysis/new-run/source.json.gz
+apps/backend/.venv/bin/python -m outage_explorer.analysis_eia fetch \
+  --resume-from data/eia-analysis/new-run/source.json.gz \
+  --output data/eia-analysis/new-run/resumed-source.json.gz
+```
+
+Optional `--end YYYY-MM-DD` fixes the end; otherwise the collector uses the minimum advertised latest date across routes. Start is always 29 days earlier. Resume validates the old archive/window and preserves it, fetching missing continuation pages into a fresh archive. The collector is isolated from production; do not represent its received population as certified complete.

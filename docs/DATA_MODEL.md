@@ -1,6 +1,6 @@
 # Implemented analytical data model
 
-This document describes the code in `analytics.py`, `extract_eia.py`, `refresh_eia.py`, `diagnostics.py`, and `api/query.py`, rather than a proposed warehouse. See the [README real-data report](../README.md#real-data-reconciliation-evidence-us-07), [schema observations](EIA_SCHEMA.md), and [refresh/recovery guarantees](EIA_INCREMENTAL_REFRESH.md). The known facility count discrepancy still prevents accepted real-data publication; the diagnostic archive is not a snapshot.
+This document describes the code in `analytics.py`, `extract_eia.py`, `refresh_eia.py`, `diagnostics.py`, and `api/query.py`, rather than a proposed warehouse. See the [real-data findings](../FINDINGS.md), [schema observations](EIA_SCHEMA.md), and [refresh/recovery guarantees](EIA_INCREMENTAL_REFRESH.md). The known facility count discrepancy still prevents accepted real-data publication; the diagnostic archive is not a snapshot.
 
 ## Grains, exact types, and source mapping
 
@@ -93,36 +93,6 @@ The writer holds one local POSIX lock per output root. Files/directories are flu
 
 The isolated `analysis_eia` archives and the explicitly separate read-only demo never call production publication/recovery or update these artifacts. The demo materializes archive-derived Parquet with `demo.json` under `data/eia-demo`, has no production pointer/manifest/audit/watermark, and is rejected by production loading/base adoption. Only the separate demo API entry point installs its app-local reader after the same endpoint authorization/SQL checks; the production app remains unchanged. Their `production_eligible=false` label and unresolved count flag remain even when totals reconcile exactly.
 
-## Seven explicit design decisions
+## Technical decisions and findings
 
-### 1. Natural keys retain each source grain
-
-**Chosen:** date; date/facility; date/facility/generator, enforced in application validation and scoped to one selected snapshot. **Rejected:** surrogate row IDs or a globally unique generator ID. **Rationale/trade-off:** natural keys allow explainable duplicate detection and overlap merging without erasing grain or opaque identifiers. They depend on provisional source identity/lifecycle assumptions, so full-history uniqueness is not claimed.
-
-### 2. Current means the atomic published snapshot; refresh overlaps watermarks
-
-**Chosen:** immutable Parquet runs selected by one current pointer, per-route watermarks embedded with version-2 data/audit, and bounded configurable overlap with default conflict rejection. **Rejected:** append-only files with independent route/watermark updates, or a last-success timestamp separate from publication. **Rationale/trade-off:** readers cannot mix partial routes or advance freshness ahead of data, and overlap corrections are explicit/idempotent. Full cumulative merge/validation rewrites use memory and disk proportional to history; readers do not pin across separate HTTP requests.
-
-### 3. Preserve orphans and explain cross-grain mismatches
-
-**Chosen:** enforce route-local integrity, retain orphan generators, and full-outer compare preaggregated children with parents; report signed gaps without forced balancing. **Rejected:** inferred physical foreign keys, dropping unmatched children, or reconstructing a parent total to hide differences. **Rationale/trade-off:** source definitions and lifecycle coverage are not fully established, so comparison evidence must not invent a master inventory. Orphans/gaps can remain visible; not every mismatch is a proven defect or automatic extraction failure. This does not relax route pagination completeness.
-
-### 4. Refresh is asynchronous within one API process
-
-**Chosen:** Admin-only in-process background worker, 202 admission, polling by job ID, and single-active-job admission plus the pipeline filesystem lock. **Rejected:** blocking long HTTP refresh requests or adding Celery/Redis/brokers. **Rationale/trade-off:** bounded local infrastructure suits slow EIA requests while existing snapshots remain readable. API jobs are not durable across restarts, graceful shutdown may wait, and deployment requires a single API worker; durable ingestion audits are distinct from job status.
-
-### 5. SQL is a compiled, deliberately small read-only subset
-
-**Chosen:** SQLGlot AST validation and reconstruction of one SELECT on one approved view, plain column/star projections, constrained predicates, ORDER BY, and LIMIT. **Rejected:** executing raw SQL after a regex/prefix check, or accepting broad DuckDB SELECT syntax. **Rationale/trade-off:** rejecting writes, multiple statements, CTEs, subqueries, joins, unions, functions/table functions, qualified tables/columns, aliases, external scans, PRAGMA, ATTACH, COPY, and unknown nodes closes resource-access paths. Literals become bound parameters. The server fetches at most 201 and returns at most 200 rows with truncation status; API SQL length is capped at 10,000 characters and AST size at 512 nodes. Aggregation and advanced SQL are intentionally unavailable; result limits do not bound all execution work or provide a query timeout.
-
-### 6. Every accepted table reference is authorized before data access
-
-**Chosen:** require Analyst/Admin first, structurally require exactly one SELECT and one Table node in the full AST, accept only an unqualified canonical table from `DATASETS`, then invoke centralized `authorize_datasets` before `open_analytics`. Every unrecognized construct fails closed rather than escaping table discovery. **Rejected:** checking only the first textual FROM, trusting a client dataset list/frontend hiding, or accepting nested SQL with incomplete reference authorization. **Rationale/trade-off:** the accepted subset has one exhaustively checked reference; nested/indirect references cannot enter execution. Viewer cannot use `/query` even for national data; catalog/preview and the national metric separately apply dataset policy. Broader future SQL must extend AST authorization first. Trusted local Python/DuckDB helpers themselves are not an authorization sandbox.
-
-### 7. Preserve exact values and separate evidence from acceptance
-
-**Chosen:** non-null fixed Decimal storage for measures, explicit units, strict schema/record validation, nullable labels, and non-production archives for unverified source analysis. **Rejected:** floating-point coercion, zero-filling invalid measures, automatic schema widening, or replacing an inconsistent EIA total with the observed key count. **Rationale/trade-off:** exact gaps and reproducible evidence survive without silent rounding or false completeness. The storage policy rejects otherwise numeric data needing greater precision; the facility mismatch blocks useful production data until its semantics are independently resolved. An internally consistent archive or a coordinated capacity change is not automatically a complete publication or a source anomaly.
-
-## Reproduction and remaining deliverables
-
-The [README temporal report](../README.md#offline-temporal-investigation-and-anomaly-shortfall) includes exact values, candidate classification, source references, and commands. The Mermaid ER, type/key mapping, relationship behavior, publication/audit description, and **exactly seven decisions above** are complete. The requirement for three independent defensible anomalies remains unmet: zero confirmed source-data defects and one independently verified API count inconsistency. Production completeness remains unresolved; no synthetic facts or accepted real snapshot are substituted.
+The seven choices, rejected alternatives, and rationales are maintained only in [DECISIONS.md](../DECISIONS.md). [FINDINGS.md](../FINDINGS.md) contains the real-data comparisons, unresolved source-completeness limitation, anomaly shortfall, and offline reproduction commands.

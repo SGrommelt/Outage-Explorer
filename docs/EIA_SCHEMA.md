@@ -64,7 +64,7 @@ The national sample had exactly seven fields per row, facility nine, and generat
 
 ### Required-field proposal
 
-This is a proposed future validation policy, **not an EIA guarantee and not implemented as an extraction pipeline**:
+Historical proposal from the schema-probe stage, **not an EIA guarantee**. Extraction has since been implemented; see [current validation](DATA_MODEL.md#invalid-records-duplicates-and-relationships) and the [ingestion runbook](EIA_INCREMENTAL_REFRESH.md#shared-extraction-options-and-validation). The original proposal was:
 
 - For row identity: require nonempty `period`, plus `facility` and/or `generator` according to the natural-key table. Validate the daily date format. Missing key values should be reported rather than silently assigned substitutes.
 - For this requested three-measure projection: expect the presence of `capacity`, `outage`, `percentOutage`, and their three `*-units` fields. Preserve explicit nulls and distinguish them from absent fields and `""`; do not replace unknown values with zero.
@@ -106,4 +106,4 @@ Missing credentials, connection/DNS/timeouts, non-200 statuses (including redire
 - Full facet catalogs, plant/generator lifecycle history, geographic attributes, and publication/revision schedules were not fetched or inferred.
 - The root cause of intermittent pooled-connection timeouts remains unproven; fresh connections worked for the retained run.
 
-No production schema, database tables, extraction pipeline, or full dataset was created during this exploration stage. The subsequent [local extraction implementation and live validation](EIA_EXTRACTION.md) found that the facility route returned 55 rows for 2026-10-20 while reporting a total of 95; that mismatch prevents publication under the extractor's strict completeness policy.
+No production schema, database tables, extraction pipeline, or full dataset was created during this exploration stage. The subsequent [local extraction implementation](EIA_INCREMENTAL_REFRESH.md#independent-date-window-extraction) and [historical real-data findings](../FINDINGS.md#verified-api-discrepancy-and-source-completeness-limitation) found that the facility route returned 55 rows for 2026-10-20 while reporting a total of 95; that mismatch prevents publication under the extractor's strict completeness policy.
