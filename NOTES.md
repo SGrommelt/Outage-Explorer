@@ -2,17 +2,17 @@
 
 ## AI assistance and attribution
 
-Codex and ChatGPT assisted with implementation, tests, reviews, and documentation. This disclosure is based on the developer's instructions and development conversation; Git author names alone do not establish which lines were written manually or by AI. No claim is made that the developer personally wrote every implementation or discovered every defect.
+Application code was generated primarily with **Codex**; the developer did not manually author application code. Codex also assisted with tests, reviews, and documentation. **ChatGPT** supported planning, technical discussions, and review. The developer directed the work, reviewed outputs and findings, requested corrections, and verified results.
 
-The tracked history through `bbe1678` contains 20 incremental commits, progressing from setup and source exploration through ingestion/recovery, analytics, authentication/RBAC, APIs, frontend, real evidence, isolated demo, reconciliation, and metric polish. The repository is not shallow. These commits and recorded fixtures substantiate an iterative workflow; they are not a complete prompt transcript or proof of human/AI authorship for each step.
+The tracked history through `bbe1678` contains 20 incremental commits, progressing from setup and source exploration through ingestion/recovery, analytics, authentication/RBAC, APIs, frontend, real evidence, isolated demo, reconciliation, and metric polish. Later commits retain documentation and findings work. The repository is not shallow. History and fixtures substantiate an iterative workflow, not a complete prompt transcript.
 
-**TODO — developer confirmation:** identify which design choices, code edits, and reviews were performed manually, and which AI-generated work was materially revised. Add only personally confirmed activities and concrete examples.
+## Concrete AI-generated mistake and correction
 
-## Concrete AI mistake — confirmation required
+The initial Codex-generated incremental-refresh implementation could classify an interrupted publication as unpublished after the authoritative `current.json` pointer had already been replaced. The developer requested an AI-assisted code review that identified the issue, reviewed the finding, requested a correction, and verified the result.
 
-**TODO — required before claiming this Engineering Notes criterion complete:** confirm one specific AI-originated mistake, how it was detected, the correction, and the verifying test/commit. Current repository evidence does not independently establish all four parts or the personal discoverer.
+[The corrected implementation](apps/backend/src/outage_explorer/refresh_eia.py) determines publication from the authoritative pointer and validated snapshot metadata rather than trusting only an in-memory flag. Recovery reconciles audit mirrors with that publication metadata. [The regression](apps/backend/tests/test_refresh_eia.py), `test_interrupt_immediately_after_pointer_replace_is_published`, replaces the actual pointer and then injects an interruption. It checks the manifest, published version, and watermarks, including mirror-write failure and subsequent recovery.
 
-One candidate to confirm is the publication-boundary recovery bug: a signal immediately after pointer replacement must not leave a committed snapshot treated as unpublished/interrupted. [The regression](apps/backend/tests/test_refresh_eia.py) (`test_interrupt_immediately_after_pointer_replace_is_published`) injects the interruption after the actual replacement, checks authoritative manifest/version/watermarks, and exercises mirror-write failure and later recovery. [The implementation](apps/backend/src/outage_explorer/refresh_eia.py) rechecks the pointer and repairs audit mirrors from validated publication metadata. This demonstrates the protected boundary, **not evidence that AI originated the earlier bug or that a particular person detected it**. Do not promote the candidate to an authorship claim without confirmation.
+The correction and regression are included in commit `0106423`. **The faulty working-tree version was not separately committed; there is no Git before-and-after diff of that original defect.** AI origin and the review sequence above are developer-confirmed, while the committed code and test substantiate the correction and verification mechanism.
 
 ## Verification beyond running the app
 
@@ -22,6 +22,7 @@ One candidate to confirm is the publication-boundary recovery bug: a signal imme
 | Ingestion/recovery | [Refresh tests](apps/backend/tests/test_refresh_eia.py) inject pointer-boundary interruption, corrupted audits, schema drift, storage errors, and concurrency; assert unchanged publication/watermarks on pre-commit failure. |
 | SQL/RBAC | [SQL tests](apps/backend/tests/test_query.py) reject file readers, dynamic queries, nested references, writes, and multiple statements before data access; test bound literals and result caps. [Auth tests](apps/backend/tests/test_auth.py) cover invalid/expired/tampered credentials and permissions. |
 | Demonstration isolation | [Demo tests](apps/backend/tests/test_demo.py) use archive-derived Parquet and real API routers, test personas and safe/unsafe SQL, and verify refresh cannot mutate demo/production state. |
+| Recorded anomaly analysis | [Offline analysis tests](apps/backend/tests/test_analysis_eia.py) reproduce the Facility counts, synchronized capacity step, exact daily outage changes, type-7 quartiles/Tukey fence, and generator contributions from saved evidence. These are one API inconsistency and two unusual observations, not three confirmed source-data errors. |
 | Reconciliation | [API tests](apps/backend/tests/test_reconciliation_api.py) verify real matching data and synthetic missing keys/dates, micro-MW gaps, invalid inputs, and offsetting facility differences. Synthetic records are not claimed as observed anomalies. |
 | Frontend | [Exploration tests](apps/frontend/src/exploration.test.tsx), [reconciliation tests](apps/frontend/src/reconciliation.test.tsx), and [metric tests](apps/frontend/src/fleet-share.test.tsx) exercise mocked HTTP, state cleanup, filtering/pagination, exact formatting, and missing-value chart gaps. |
 
@@ -29,15 +30,13 @@ The code and tests support these verification methods; test presence alone does 
 
 ## Documentation-consolidation checks — 2026-10-22
 
-This session ran 69 focused source-evidence/demo/reconciliation tests, then the full backend suite: **536 passed**, with one existing Starlette TestClient deprecation warning. Frontend `npm test`: **80 passed**; `npm run typecheck` and `npm run build` passed. These commands verify the unchanged application, not personal authorship or browser behavior.
+The historical documentation-consolidation session ran 69 focused source-evidence/demo/reconciliation tests, then the full backend suite: **536 passed**, with one existing Starlette TestClient deprecation warning. Frontend `npm test`: **80 passed**; `npm run typecheck` and `npm run build` passed. These commands verify the unchanged application, not personal authorship or browser behavior.
 
 Additional local checks validated 85 relative links/anchors, exactly seven decision entries, preserved ER content, CLI help/subcommands and configured npm scripts, and `git diff --check`. Archive values/counts and temporal examples were recomputed offline; hashes confirmed all 82 previously tracked non-Markdown files unchanged, including evidence, fixtures, application/configuration, and scripts. No live EIA requests, dependency installs, clean-clone setup, or browser session were performed during consolidation.
 
 ## Human review and manual browser verification
 
-**User-reported, not automated:** the developer reported manually checking all main application flows in a browser before the final metric-dashboard polish. This report is not a committed browser recording, screenshot suite, or automated end-to-end result. Do not infer verification of the later polish from that earlier statement.
-
-**TODO — developer confirmation:** record browser/date, roles/flows checked, observed outcomes, and whether the latest dashboard polish was subsequently reviewed. Confirm any personally performed source investigation or code review separately; authored commits alone do not establish it.
+**Developer-confirmed, not automated:** the developer personally tested the application in a browser, including the latest changes, and reviewed outputs and correction results. No specific browser, date, or scenario inventory is claimed here. This verification is distinct from FastAPI integration tests and jsdom component tests; no committed browser recording or automated browser end-to-end suite is claimed.
 
 ## Limits and retained evidence
 
@@ -46,4 +45,4 @@ Additional local checks validated 85 relative links/anchors, exactly seven decis
 - Three reproducible findings are documented: one API inconsistency and two unusual valid observations. No source-data defects are established; matching aggregates do not prove source completeness.
 - Crash tests inject signals/errors and inspect sync ordering; they do not establish universal hardware/power-loss durability.
 - No tracked agent-session/prompt export was found during the documentation audit. If authentic logs are supplied, include only a short sanitized excerpt with context/revision; exclude secrets, private paths, and unrelated material. Do not fabricate a reconstructed transcript.
-- Preserve incremental Git history for submission. Optional prompt evidence does not replace the required confirmed AI-mistake explanation.
+- Preserve incremental Git history for submission. Optional prompt evidence supplements the confirmed AI-mistake explanation above.

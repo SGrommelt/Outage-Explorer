@@ -180,7 +180,7 @@ apps/backend/.venv/bin/python -m outage_explorer.extract_eia \
   --page-size 25 --attempts 3 --timeout 20
 ```
 
-`--start` and `--end` are required inclusive daily ISO dates. The historical example currently fails facility completeness, as documented in [FINDINGS.md](../FINDINGS.md#verified-api-discrepancy-and-source-completeness-limitation); it is not a working-demo startup command.
+`--start` and `--end` are required inclusive daily ISO dates. The historical example currently fails facility completeness, as documented in [FINDINGS.md](../FINDINGS.md#finding-1--facility-api-count-inconsistency); it is not a working-demo startup command.
 
 ```text
 data/eia/
