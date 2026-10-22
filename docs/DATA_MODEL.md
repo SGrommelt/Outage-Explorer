@@ -91,7 +91,7 @@ Each route watermark is its latest **successfully published** date and must equa
 
 The writer holds one local POSIX lock per output root. Files/directories are flushed/fsynced before publication and the pointer directory after replacement. An interruption after pointer commit is reconciled against the actual validated pointer/manifest, not an in-memory success flag. Recovery restores the current audit mirror from the authoritative manifest; corrupt historical mirrors are preserved as `.corrupt` evidence, while corrupt current pointers/data/publication metadata block refresh. Failed pre-commit runs do not replace data or advance watermarks. Atomic visibility and requested fsync ordering do not establish universal power-loss durability on every filesystem/device; see the [detailed recovery limitations](EIA_INCREMENTAL_REFRESH.md#ingestion-run-metadata-and-failures).
 
-The isolated `analysis_eia` archives never call publication/recovery or update these artifacts. Their `production_eligible=false` label and unresolved count flag remain even when totals reconcile exactly.
+The isolated `analysis_eia` archives and the explicitly separate read-only demo never call production publication/recovery or update these artifacts. The demo materializes archive-derived Parquet with `demo.json` under `data/eia-demo`, has no production pointer/manifest/audit/watermark, and is rejected by production loading/base adoption. Only the separate demo API entry point installs its app-local reader after the same endpoint authorization/SQL checks; the production app remains unchanged. Their `production_eligible=false` label and unresolved count flag remain even when totals reconcile exactly.
 
 ## Seven explicit design decisions
 

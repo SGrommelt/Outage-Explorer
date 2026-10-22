@@ -22,7 +22,7 @@ function mockLogin(role: Role, expires = 600) {
   vi.stubGlobal("fetch", fetcher);
   return fetcher;
 }
-afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers(); });
 
 test("unauthenticated users see only the login form and make no data requests", () => {
   const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher); mount();
@@ -151,4 +151,12 @@ test("server failures do not display backend response details", async () => {
   mount(); submit();
   expect(await screen.findByRole("alert")).toHaveTextContent("request could not be completed");
   expect(screen.queryByText(/private configuration/)).not.toBeInTheDocument();
+});
+
+
+test("explicit demo mode displays the completeness caveat before login", () => {
+  vi.stubEnv("VITE_DEMO_MODE", "true");
+  mount();
+  expect(screen.getByRole("complementary", { name: "Demonstration data" })).toHaveTextContent("source completeness is unverified");
+  expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
 });

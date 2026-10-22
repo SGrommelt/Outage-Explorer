@@ -70,5 +70,10 @@ function Shell() {
 }
 
 export default function App() {
-  return <SessionProvider><Shell /></SessionProvider>;
+  return <>
+    {import.meta.env.VITE_DEMO_MODE === "true" && <aside aria-label="Demonstration data" className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-950">
+      <strong>Read-only real-data demo.</strong> Saved EIA observations; source completeness is unverified. Refresh cannot publish data.
+    </aside>}
+    <SessionProvider><Shell /></SessionProvider>
+  </>;
 }

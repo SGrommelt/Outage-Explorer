@@ -5,9 +5,10 @@ from decimal import Decimal
 from typing import Literal
 
 import duckdb
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from outage_explorer.api.data_source import open_data
 from outage_explorer.analytics import AnalyticsError, open_analytics
 from outage_explorer.api.datasets import _response, _unavailable
 from outage_explorer.auth import User, require_dataset
@@ -30,12 +31,12 @@ class FleetResponse(BaseModel):
 
 
 @router.get('/fleet-offline-share', response_model=FleetResponse)
-def fleet_offline_share(start_date: date = Query(), end_date: date = Query(),
+def fleet_offline_share(request: Request, start_date: date = Query(), end_date: date = Query(),
                         user: User = Depends(require_dataset('national_outages'))):
     if start_date > end_date or (end_date - start_date).days >= 366:
         raise HTTPException(400, 'Use an inclusive date window of at most 366 days.')
     try:
-        with open_analytics() as db:
+        with open_data(request, open_analytics) as db:
             rows = daily_fleet_offline_share(db, start_date, end_date)
     except (AnalyticsError, duckdb.Error, OSError):
         raise _unavailable() from None

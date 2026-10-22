@@ -54,6 +54,40 @@ The API runs at http://127.0.0.1:8000. `GET /health` returns `{"status":"ok"}`. 
 
 FastAPI, DuckDB, HTTPX, Pandas, PyArrow, Pydantic, and SQLGlot are declared dependencies. SQLite is provided by Python's built-in `sqlite3` module. Uvicorn runs the development server; Pytest is a development extra. No persistent database is initialized; analytical connections use an in-memory DuckDB catalog over existing Parquet files.
 
+## Isolated real-data demo (completeness unverified)
+
+The production facility count blocker remains unresolved. Use this **separate, read-only evidence demo** to demonstrate the application against the pinned real EIA archive for **September 22–October 21, 2026**. It contains 30 national, 1,650 facility, and 2,850 generator rows. It is **not independently certified complete, not a production publication, and not current live EIA data**. No EIA requests or EIA API key are needed.
+
+After installing backend/frontend dependencies using the instructions above/below, configure the existing local `viewer`, `analyst`, and `admin` accounts using `seed_auth` below if not already configured. Do not replace existing credentials or put passwords in frontend settings. From the repository root, stop any production API using port 8000, then run:
+
+```sh
+# Validate the pinned archive and prepare a separate immutable demo dataset.
+apps/backend/.venv/bin/python -m outage_explorer.demo_data
+# Start the explicitly separate demo application (one worker).
+apps/backend/.venv/bin/python -m uvicorn outage_explorer.demo:app \
+  --host 127.0.0.1 --port 8000
+```
+
+In another terminal, from the repository root:
+
+```sh
+VITE_DEMO_MODE=true VITE_API_BASE_URL=/api npm run dev
+```
+
+Open Vite's printed URL (normally http://localhost:5173), sign in with your configured development passwords, select a dataset, or run `SELECT * FROM generator_outages ORDER BY outage_date LIMIT 10` as Analyst/Admin. For the metric, choose October 20, 2026: **100056.700000 MW** fleet capacity, **19859.767000 MW** offline, **19.848513%** offline share. Viewer can see only the national catalog/preview and national metric; SQL and refresh remain forbidden to Viewer. Use dates within the archived range to see real rows.
+
+`VITE_DEMO_MODE` adds a visible warning on login and every application section; it is only a label and **does not select a backend or grant permissions**. The existing Vite `/api` proxy selects the server on port 8000. The demo backend independently labels every response with `X-Outage-Explorer-Data-Mode: demo-completeness-unverified`, a safe notice header, demo-prefixed catalog descriptions, and a demo OpenAPI title. Always use the explicitly named backend entry point and frontend flag together. No CORS change is needed with the proxy.
+
+Demo Admin refresh accepts a normal asynchronous job and returns an ID; polling reaches **failed**, `published=false`, with an explicit read-only-demo message. This deliberately demonstrates admission/status/failure handling without simulating a publication, contacting EIA, or writing ingestion audits/watermarks. Job IDs remain in memory only. The unchanged production refresh job success/concurrency/recovery paths are tested offline with mocked ingestion, not claimed as a successful live refresh.
+
+Artifacts live only under Git-ignored `data/eia-demo/datasets/<source-sha256>/`: three typed Parquet files and **`demo.json`**, which records the original reported totals, actual/unique counts, validation basis, and unresolved facility count caveat. There is **no `current.json`, production `manifest.json`, watermark, or ingestion audit**. Preparation is idempotent for unchanged valid artifacts and refuses to overwrite corrupt ones; move a damaged demo directory aside before preparing again. Startup fails if preparation is missing or corrupt and never falls back to production. Production readers and `--base-snapshot` adoption reject the demo root. Neither a query parameter nor a production environment switch enables demo data.
+
+Validation checks the pinned archive hash, exact schemas/values/keys, all 30 route dates, terminal traversal, national/generator reported counts, matching facility/generator keys, and exact capacity/outage sums at all grains. These are internal consistency guarantees. Facility pages still report **2,850** against **1,650** validated rows and end empty at offset **1,650**; that discrepancy is stored, not corrected or certified. Related datasets can share omissions. The [investigation](docs/EIA_PAGINATION_INVESTIGATION.md) explains why this evidence does not change production completeness policy.
+
+**Rollback/production:** stop the demo server and restart `outage_explorer.main:app` using the normal backend command, then restart Vite with `VITE_DEMO_MODE=false`. Production uses only its unchanged published snapshot root and may return 503 until a valid publication exists. Demo files are never automatically adopted; keep or move them independently. No production dataset needs restoration.
+
+**Verification scope:** `tests/test_demo.py` uses actual FastAPI routers, real archive-derived Parquet, real password hashing/token issuance, temporary persona configuration, and ASGI TestClient. It covers logins/identity, catalog visibility, deterministic server pagination, filters/empty/errors, permissions before data access, safe/unsafe SQL, real metric values, expired tokens/account switching, read-only refresh jobs, and data/provenance corruption. Frontend tests use jsdom/mock HTTP and include the demo warning. **No browser-driven end-to-end session or user-specific configured-password login was performed.** The documented proxy/startup configuration is checked, but browser rendering/network behavior still needs manual verification.
+
 ## Local authentication and authorization
 
 Create the backend `.env` if it does not already exist, preserving any configured EIA key, then run from the repository root:
@@ -284,7 +318,7 @@ See [docs/EIA_INCREMENTAL_REFRESH.md](docs/EIA_INCREMENTAL_REFRESH.md) for legac
 
 See [the implemented data model](docs/DATA_MODEL.md) for exact physical/view types, the logical Mermaid ER diagram, invalid/duplicate/orphan handling, snapshot and audit relationships, and exactly seven explicit design decisions.
 
-The smallest model is three independent fact views. There are no copied data tables, inferred dimension tables, automatic joins, or new dependencies. Open a connection from the repository root with the installed backend:
+The production model is three independent fact views; the isolated demo entry point uses the same projections over separately validated, explicitly unverified evidence files. There are no copied data tables, inferred dimension tables, automatic joins, or new dependencies. Open a connection from the repository root with the installed backend:
 
 ```sh
 apps/backend/.venv/bin/python - <<'PYTHON'

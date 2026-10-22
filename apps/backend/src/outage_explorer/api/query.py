@@ -4,13 +4,14 @@ from datetime import date
 from decimal import Decimal, DecimalException
 
 import duckdb
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 import sqlglot
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, SqlglotError
 
+from outage_explorer.api.data_source import open_data
 from outage_explorer.analytics import AnalyticsError, open_analytics
 from outage_explorer.api.datasets import ColumnInfo, DATASETS, _response, _unavailable
 from outage_explorer.auth import User, authorize_datasets, require_sql
@@ -187,10 +188,10 @@ def prepare_query(sql: str, user: User) -> tuple[str, list]:
 
 
 @router.post('/query', response_model=QueryResponse)
-def query(body: QueryRequest, user: User = Depends(require_sql)) -> JSONResponse:
+def query(request: Request, body: QueryRequest, user: User = Depends(require_sql)) -> JSONResponse:
     sql, parameters = prepare_query(body.sql, user)  # RBAC + AST checks precede snapshot/connection access.
     try:
-        with open_analytics() as db:
+        with open_data(request, open_analytics) as db:
             cursor = db.execute(sql, parameters)
             columns = [ColumnInfo(name=c[0], type=str(c[1])) for c in cursor.description]
             rows = cursor.fetchmany(MAX_QUERY_ROWS + 1)

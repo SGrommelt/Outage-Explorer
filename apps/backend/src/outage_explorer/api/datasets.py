@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from outage_explorer.api.data_source import open_data
 from outage_explorer.analytics import AnalyticsError, open_analytics
 from outage_explorer.auth import User, allowed_datasets, authorize_datasets, current_user
 
@@ -75,16 +76,16 @@ def _unavailable() -> HTTPException:
 
 
 @router.get('', response_model=CatalogResponse)
-def catalog(user: User = Depends(current_user)) -> JSONResponse:
+def catalog(request: Request, user: User = Depends(current_user)) -> JSONResponse:
     names = allowed_datasets(user)
     authorize_datasets(user, names)  # Complete authorization before snapshot work.
     try:
-        with open_analytics() as db:
+        with open_data(request, open_analytics) as db:
             datasets = []
             for name in names:
                 spec = DATASETS[name]
                 columns = db.execute(spec.query + ' LIMIT 0').description
-                datasets.append({'name': name, 'description': spec.description,
+                datasets.append({'name': name, 'description': getattr(request.app.state, 'dataset_notice', '') + spec.description,
                                  'columns': [{'name': c[0], 'type': str(c[1])} for c in columns]})
     except (AnalyticsError, duckdb.Error, OSError):
         raise _unavailable() from None
@@ -119,7 +120,7 @@ def preview(request: Request, dataset: Dataset = Depends(authorized_dataset),
     # Dataset.query/order are fixed allowlist entries, never request strings.
     filtered = dataset.query + where
     try:
-        with open_analytics() as db:
+        with open_data(request, open_analytics) as db:
             total = db.execute('SELECT count(*) FROM (' + filtered + ')', parameters).fetchone()[0]
             cursor = db.execute(filtered + ' ORDER BY ' + dataset.order + ' LIMIT $limit OFFSET $offset',
                                 {**parameters, 'limit': page_size, 'offset': (page - 1) * page_size})

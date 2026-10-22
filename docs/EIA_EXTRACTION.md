@@ -139,3 +139,8 @@ New offline coverage replays the two-day mismatch through both extraction workfl
 
 
 The later [isolated 30-day analysis](../README.md#real-data-reconciliation-evidence-us-07) is intentionally separate from this extraction command: it retains unverified source evidence under `eia-analysis`, not a published snapshot, and does not call production publication/audit/watermark functions. Its 1,650/2,850 facility mismatch remains explicitly unresolved despite matching cross-grain MW sums. It neither changes the above completeness rule nor makes the diagnostic archive eligible for production adoption.
+
+
+## Read-only application demonstration
+
+Production extraction is unchanged and still rejects the facility's early empty page before its reported total. For an explicitly limited application demonstration, follow the [separate evidence-demo startup commands](../README.md#isolated-real-data-demo-completeness-unverified). This uses the already retained 30-day archive and separate demo Parquet/`demo.json` files, not this command, `current.json`, production watermarks, or ingestion audits. The production loader and refresh base-adoption path reject that demo layout. Both counts and the unresolved completeness caveat are retained; cross-grain equality is not certified coverage. Demo API refresh is deliberately read-only and reports failure without EIA calls. The production application has no environment or request-parameter fallback to demonstration data.
