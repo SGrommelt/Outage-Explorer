@@ -192,3 +192,43 @@ test("catalog network failures are recoverable", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Retry catalog" }));
   expect(await screen.findByText("No datasets are available for your account.")).toBeVisible();
 });
+
+test.each([0, 1, 50, 51, 100])("disabled Next is inert for %s rows, including single and final pages", async total => {
+  setup();
+  const original = handle;
+  handle = (url, options) => {
+    if (!url.pathname.endsWith("/preview")) return original(url, options);
+    const page = Number(url.searchParams.get("page"));
+    const pageSize = Number(url.searchParams.get("page_size"));
+    const count = Math.min(pageSize, Math.max(0, total - (page - 1) * pageSize));
+    return json({ dataset: national.name, page, page_size: pageSize, total,
+      rows: Array.from({ length: count }, (_, index) => ({ outage_date: "2026-01-01", outage_mw: String((page - 1) * pageSize + index) })) });
+  };
+  await login();
+  const pages = Math.max(1, Math.ceil(total / 50));
+  await screen.findByText(`${total} matching rows · Page 1 of ${pages}`);
+  const previewRequests = () => requests.filter(request => request.url.includes("/preview?"));
+  if (pages > 1) {
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+    const count = previewRequests().length;
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await screen.findByText(`${total} matching rows · Page 2 of ${pages}`);
+    expect(previewRequests()).toHaveLength(count + 1);
+    expect(previewRequests().at(-1)?.url).toContain("page=2");
+  }
+  const next = screen.getByRole("button", { name: "Next" });
+  expect(next).toBeDisabled();
+  expect(next).toHaveClass("disabled:cursor-not-allowed", "enabled:hover:bg-slate-700");
+  expect(next).not.toHaveClass("disabled:cursor-wait", "hover:bg-slate-700");
+  const count = requests.length;
+  await act(async () => {
+    fireEvent.pointerOver(next);
+    fireEvent.mouseOver(next);
+    fireEvent.mouseEnter(next);
+    fireEvent.click(next);
+  });
+  expect(requests).toHaveLength(count);
+  expect(screen.queryByText("Loading rows…")).not.toBeInTheDocument();
+  expect(screen.getByText(`${total} matching rows · Page ${pages} of ${pages}`)).toBeVisible();
+  expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+});
