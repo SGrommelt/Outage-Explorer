@@ -29,7 +29,7 @@ async function login() {
 }
 function refreshSubmit() {
   fireEvent.change(screen.getByLabelText("Refresh through"), { target: { value: "2026-01-02" } });
-  fireEvent.change(screen.getByLabelText("Initial start date (optional)"), { target: { value: "2026-01-01" } });
+  fireEvent.change(screen.getByLabelText("First publication start date (optional)"), { target: { value: "2026-01-01" } });
   fireEvent.click(screen.getByRole("button", { name: "Start refresh" }));
 }
 function metricSubmit() {
@@ -231,7 +231,7 @@ test.each([true, false])("bootstrap date clears only on confirmed publication %s
   handle = (_, options) => options.method === "POST" ? json(pending, 202) : json({ ...pending,
     status: published ? "succeeded" : "failed", published, outcome: published ? "published" : null });
   refreshSubmit(); await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(published ? "succeeded" : "failed"));
-  const start = screen.getByLabelText("Initial start date (optional)");
+  const start = screen.getByLabelText("First publication start date (optional)");
   await waitFor(() => expect(start).toHaveValue(published ? "" : "2026-01-01"));
   fireEvent.click(screen.getByRole("button", { name: "Start refresh" }));
   await waitFor(() => expect(calls.filter(c => c.url === "/api/refresh" && c.options.method === "POST")).toHaveLength(2));
@@ -278,5 +278,16 @@ test("a no-op outcome does not claim a bootstrap publication", async () => {
   handle = (_, options) => options.method === "POST" ? json(pending, 202) : json({ ...pending,
     status: "succeeded", published: false, outcome: "no_op" });
   refreshSubmit(); await screen.findByText("Publication: No changes needed");
-  expect(screen.getByLabelText("Initial start date (optional)")).toHaveValue("2026-01-01");
+  expect(screen.getByLabelText("First publication start date (optional)")).toHaveValue("2026-01-01");
+});
+
+
+test("first publication date is optional, initially empty, and explains existing snapshots", async () => {
+  setup(); await login(); fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  const start = screen.getByLabelText("First publication start date (optional)");
+  expect(start).toHaveValue("");
+  expect(start).not.toBeRequired();
+  const help = "Required only when creating the first production snapshot. If data was already published through the application or CLI, leave this blank; subsequent refreshes derive their starting point from published watermarks.";
+  expect(screen.getByText(help)).toBeVisible();
+  expect(start).toHaveAccessibleDescription(help);
 });

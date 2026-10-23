@@ -85,9 +85,10 @@ export function Refresh() {
   const busy = mutation.isPending || recovering || admissionUnknown || active(job.data) || Boolean(jobId && !job.data);
   return <section className="mt-5 space-y-5" aria-label="Admin refresh">
     <p className="text-sm text-slate-600">Refresh all three routes atomically. Start date is required for the first publication; later runs use published watermarks. Conflicting corrections are rejected. Leaving this section does not cancel an accepted job.</p>
+    <p id="first-publication-help" className="text-sm text-slate-600">Required only when creating the first production snapshot. If data was already published through the application or CLI, leave this blank; subsequent refreshes derive their starting point from published watermarks.</p>
     <form onSubmit={submit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="text-sm">Initial start date (optional)<input type="date" value={start} onChange={e => setStart(e.target.value)} className={`${inputStyle} mt-2`} disabled={busy} /></label>
+        <label className="text-sm">First publication start date (optional)<input aria-describedby="first-publication-help" type="date" value={start} onChange={e => setStart(e.target.value)} className={`${inputStyle} mt-2`} disabled={busy} /></label>
         <label className="text-sm">Refresh through<input type="date" required min={start || undefined} value={end} onChange={e => setEnd(e.target.value)} className={`${inputStyle} mt-2`} disabled={busy} /></label>
         <label className="text-sm">Overlap days<input type="number" min={0} max={3660} required value={overlap} onChange={e => setOverlap(Number(e.target.value))} className={`${inputStyle} mt-2`} disabled={busy} /></label>
       </div>
