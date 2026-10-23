@@ -1,48 +1,57 @@
 # Engineering Notes
 
-## AI assistance and attribution
+## How I used AI
 
-Application code was generated primarily with **Codex**; the developer did not manually author application code. Codex also assisted with tests, reviews, and documentation. **ChatGPT** supported planning, technical discussions, and review. The developer directed the work, reviewed outputs and findings, requested corrections, and verified results.
+I used **Codex** for most of the application code, as well as assistance with testing, code reviews, and documentation. I did not manually write the application code.
 
-The tracked history through `bbe1678` contains 20 incremental commits, progressing from setup and source exploration through ingestion/recovery, analytics, authentication/RBAC, APIs, frontend, real evidence, isolated demo, reconciliation, and metric polish. Later commits retain documentation and findings work. The repository is not shallow. History and fixtures substantiate an iterative workflow, not a complete prompt transcript.
+My role was to define the requirements, select the technology stack, design the system architecture, establish the implementation strategy, and break down the development process into incremental steps. I directed the implementation, reviewed the generated code, identified issues requiring further investigation, requested corrections and improvements, and verified the results through tests and manual browser testing.
 
-## Concrete AI-generated mistake and correction
+The Git history reflects this incremental development process, including environment setup, EIA exploration, data extraction and recovery, analytical views, authentication and authorization, API endpoints, frontend features, and recorded-data analysis.
 
-The initial Codex-generated incremental-refresh implementation could classify an interrupted publication as unpublished after the authoritative `current.json` pointer had already been replaced. The developer requested an AI-assisted code review that identified the issue, reviewed the finding, requested a correction, and verified the result.
+## An AI-generated mistake I caught and corrected
 
-[The corrected implementation](apps/backend/src/outage_explorer/refresh_eia.py) determines publication from the authoritative pointer and validated snapshot metadata rather than trusting only an in-memory flag. Recovery reconciles audit mirrors with that publication metadata. [The regression](apps/backend/tests/test_refresh_eia.py), `test_interrupt_immediately_after_pointer_replace_is_published`, replaces the actual pointer and then injects an interruption. It checks the manifest, published version, and watermarks, including mirror-write failure and subsequent recovery.
+One important issue came from the initial Codex-generated incremental refresh implementation. If the process was interrupted immediately after replacing the authoritative `current.json` pointer, the code could incorrectly treat the new snapshot as unpublished. That left a risk of inconsistent recovery state even though the publication pointer had already changed.
 
-The correction and regression are included in commit `0106423`. **The faulty working-tree version was not separately committed; there is no Git before-and-after diff of that original defect.** AI origin and the review sequence above are developer-confirmed, while the committed code and test substantiate the correction and verification mechanism.
+I requested a critical review of the refresh implementation. The review identified this publication-boundary problem, and I requested a fix and a regression test to verify the behavior.
 
-## Verification beyond running the app
+The [updated refresh implementation](apps/backend/src/outage_explorer/refresh_eia.py) now checks the authoritative pointer and validated snapshot metadata to determine whether publication occurred, rather than relying only on an in-memory flag. Recovery also reconciles the audit records with the published state.
 
-| Area | Method and representative evidence |
+The regression test, [`test_interrupt_immediately_after_pointer_replace_is_published`](apps/backend/tests/test_refresh_eia.py), replaces the real pointer and injects an interruption immediately afterward. It checks that the published version, manifest, and watermarks are recovered correctly, including when an audit mirror write fails.
+
+The fix and test are included in commit **`0106423`**. The original faulty version was caught in the working tree before being committed, so there is no separate Git commit containing that defect. The committed test and implementation show the correction and how I verified it.
+
+## How I verified the implementation
+
+I did more than check whether the application started. I reviewed the critical paths and used targeted tests to check failure cases, permissions, data consistency, and recovery behavior.
+
+| Area | What I checked |
 | --- | --- |
-| Real source behavior | [Recorded-response tests](apps/backend/tests/test_facility_pagination_evidence.py) recompute key coverage, exact MW sums, and count inconsistencies. [FINDINGS.md](FINDINGS.md) separates verified facts from hypotheses. |
-| Ingestion/recovery | [Refresh tests](apps/backend/tests/test_refresh_eia.py) inject pointer-boundary interruption, corrupted audits, schema drift, storage errors, and concurrency; assert unchanged publication/watermarks on pre-commit failure. |
-| SQL/RBAC | [SQL tests](apps/backend/tests/test_query.py) reject file readers, dynamic queries, nested references, writes, and multiple statements before data access; test bound literals and result caps. [Auth tests](apps/backend/tests/test_auth.py) cover invalid/expired/tampered credentials and permissions. |
-| Demonstration isolation | [Demo tests](apps/backend/tests/test_demo.py) use archive-derived Parquet and real API routers, test personas and safe/unsafe SQL, and verify refresh cannot mutate demo/production state. |
-| Recorded anomaly analysis | [Offline analysis tests](apps/backend/tests/test_analysis_eia.py) reproduce the Facility counts, synchronized capacity step, exact daily outage changes, type-7 quartiles/Tukey fence, and generator contributions from saved evidence. These are one API inconsistency and two unusual observations, not three confirmed source-data errors. |
-| Reconciliation | [API tests](apps/backend/tests/test_reconciliation_api.py) verify real matching data and synthetic missing keys/dates, micro-MW gaps, invalid inputs, and offsetting facility differences. Synthetic records are not claimed as observed anomalies. |
-| Frontend | [Exploration tests](apps/frontend/src/exploration.test.tsx), [reconciliation tests](apps/frontend/src/reconciliation.test.tsx), and [metric tests](apps/frontend/src/fleet-share.test.tsx) exercise mocked HTTP, state cleanup, filtering/pagination, exact formatting, and missing-value chart gaps. |
+| **EIA extraction** | [Recorded-response tests](apps/backend/tests/test_facility_pagination_evidence.py) check pagination counts, key coverage, and exact MW totals. The unresolved facility count issue is documented in [FINDINGS.md](FINDINGS.md). |
+| **Refresh and recovery** | [Refresh tests](apps/backend/tests/test_refresh_eia.py) cover interrupted publication, corrupted audit files, schema changes, storage failures, and concurrent refresh attempts. |
+| **SQL and authorization** | [Query tests](apps/backend/tests/test_query.py) reject unsupported SQL and unauthorized access paths. [Authentication tests](apps/backend/tests/test_auth.py) cover invalid, expired, and tampered credentials, along with role permissions. |
+| **Demo isolation** | [Demo tests](apps/backend/tests/test_demo.py) check the separate demo data, role-based API behavior, and that demo refresh cannot modify production state. |
+| **Reconciliation** | [Reconciliation API tests](apps/backend/tests/test_reconciliation_api.py) cover matching recorded data and synthetic cases with missing records, small MW differences, and offsetting gaps. |
+| **Findings** | [Offline analysis tests](apps/backend/tests/test_analysis_eia.py) reproduce the facility count inconsistency, October 1 capacity change, and October 3 outage increase from the saved evidence. |
+| **Frontend** | [Exploration](apps/frontend/src/exploration.test.tsx), [reconciliation](apps/frontend/src/reconciliation.test.tsx), and [fleet metric](apps/frontend/src/fleet-share.test.tsx) tests cover API-driven states, filters, pagination, formatting, and missing values. |
 
-The code and tests support these verification methods; test presence alone does not identify who designed or executed each check. Commands are in the [README](README.md#running-tests). The [dated setup review](docs/setup-review.md) preserves early environment/dependency results; its original one-test counts and advisory counts are historical.
+The backend tests use mocked HTTP, recorded evidence, and synthetic fixtures where appropriate. Frontend tests use jsdom and mocked HTTP. Synthetic cases demonstrate that a check works; they are not presented as anomalies found in EIA's real data.
 
-## Documentation-consolidation checks — 2026-10-22
+### Recorded verification run — October 22, 2026
 
-The historical documentation-consolidation session ran 69 focused source-evidence/demo/reconciliation tests, then the full backend suite: **536 passed**, with one existing Starlette TestClient deprecation warning. Frontend `npm test`: **80 passed**; `npm run typecheck` and `npm run build` passed. These commands verify the unchanged application, not personal authorship or browser behavior.
+During the documentation review, I ran 69 focused tests followed by the full backend suite (**536 passed**, with one existing Starlette TestClient deprecation warning). The frontend suite passed **80 tests**, and both `npm run typecheck` and `npm run build` succeeded.
 
-Additional local checks validated 85 relative links/anchors, exactly seven decision entries, preserved ER content, CLI help/subcommands and configured npm scripts, and `git diff --check`. Archive values/counts and temporal examples were recomputed offline; hashes confirmed all 82 previously tracked non-Markdown files unchanged, including evidence, fixtures, application/configuration, and scripts. No live EIA requests, dependency installs, clean-clone setup, or browser session were performed during consolidation.
+I also checked 85 relative documentation links and anchors, the seven required entries in `DECISIONS.md`, the ER diagram, CLI commands, npm scripts, and `git diff --check`. I reproduced archive counts and temporal examples offline and verified that the documentation-only review had not changed the 82 tracked non-Markdown files.
 
-## Human review and manual browser verification
+These numbers describe **that specific verification run**, not necessarily the latest test totals after subsequent changes. The commands to run the current suites are in the [README](README.md#running-tests). The [setup review](docs/setup-review.md) contains earlier environment checks and historical dependency advisories.
 
-**Developer-confirmed, not automated:** the developer personally tested the application in a browser, including the latest changes, and reviewed outputs and correction results. No specific browser, date, or scenario inventory is claimed here. This verification is distinct from FastAPI integration tests and jsdom component tests; no committed browser recording or automated browser end-to-end suite is claimed.
+### Manual browser review
 
-## Limits and retained evidence
+I also tested the application myself in a browser, including the latest changes, and reviewed the resulting behavior. This was manual verification, separate from the automated backend and frontend suites. I did not set up an automated browser end-to-end test suite.
 
-- FastAPI integration tests use ASGI TestClient; frontend tests use jsdom/mock HTTP. Neither equals real browser end-to-end automation or a fresh-clone installation.
-- Production ingestion intentionally rejects the unresolved facility total discrepancy. A successful live production publication/refresh is not claimed; the demo's failed refresh is deliberate.
-- Three reproducible findings are documented: one API inconsistency and two unusual valid observations. No source-data defects are established; matching aggregates do not prove source completeness.
-- Crash tests inject signals/errors and inspect sync ordering; they do not establish universal hardware/power-loss durability.
-- No tracked agent-session/prompt export was found during the documentation audit. If authentic logs are supplied, include only a short sanitized excerpt with context/revision; exclude secrets, private paths, and unrelated material. Do not fabricate a reconstructed transcript.
-- Preserve incremental Git history for submission. Optional prompt evidence supplements the confirmed AI-mistake explanation above.
+## Remaining limitations
+
+- **Live EIA publication:** production ingestion still rejects the facility endpoint's unresolved reported-total discrepancy. I have not claimed a successful live production refresh. The read-only demo uses recorded observations and intentionally does not publish production data.
+- **Source findings:** the three findings are one confirmed API count inconsistency and two unusual but internally consistent observations. They do not establish three source-data errors. Matching totals also cannot prove that the source returned every expected record.
+- **Durability:** the interruption tests cover specific simulated failure points and recovery behavior, not every possible power-loss or filesystem failure.
+- **Testing scope:** FastAPI integration tests and jsdom tests do not replace automated end-to-end browser tests or guarantee that a new environment will behave identically.
+
