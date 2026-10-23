@@ -4,7 +4,7 @@ Outage Explorer is a full-stack application built for the Arkham Technologies te
 
 The project includes a data extraction and refresh pipeline, a validated Parquet data model, role-based APIs, reconciliation tools, a restricted SQL explorer, and a React interface.
 
-**Recommended starting point: the read-only demo.** It runs on recorded EIA observations from September 22 to October 21, 2026, without an API key or live requests. The facility API reports a higher row count than it returns, so I have not treated this evidence as a complete production dataset or bypassed the ingestion checks. The discrepancy and two unusual patterns in the recorded data are documented in [FINDINGS.md](FINDINGS.md).
+**Recommended starting point: the read-only demo.** It runs on recorded EIA observations from September 22 to October 21, 2026, without an API key or live requests. The facility API reports a higher row count than it returns. Production now has a narrow, explicitly source-unverified acceptance policy; the demo remains isolated and read-only. The discrepancy and two unusual patterns in the recorded data are documented in [FINDINGS.md](FINDINGS.md).
 
 ## What you can do
 
@@ -142,7 +142,7 @@ I also tested the application manually in a browser, including the latest change
 
 ## Production ingestion and refresh
 
-The production pipeline is implemented, but **successful publication of the recorded real-data window is currently blocked by the EIA facility pagination discrepancy**. The commands below describe how the production application runs; they are not a claim that live ingestion has succeeded.
+The production pipeline can publish internally validated observations using the **`facility_terminal_cross_grain_v1`** policy. Offline recorded-response replay successfully published the 30-day window through both extraction and incremental refresh. **No live refresh was run to verify this change; EIA source completeness remains unverified.**
 
 Stop the demo backend before starting the production backend on the same port:
 
@@ -161,7 +161,7 @@ Production reads only snapshots published under `data/eia/incremental`. It never
 
 For an explicitly authorized live run, configure `EIA_API_KEY` in `apps/backend/.env` or the environment. An Admin can submit `POST /refresh` and poll `GET /refresh/{job_id}`. Refresh jobs run asynchronously inside a **single API worker**; job tracking is lost when that process restarts, although pipeline audits are stored on disk.
 
-The pipeline validates each route, retries bounded transient failures, merges overlapping dates using published watermarks, and publishes all three routes together. A failure before publication leaves the current snapshot unchanged. I chose not to relax completeness validation simply to produce a successful-looking refresh.
+The pipeline validates each route, retries bounded transient failures, merges overlapping dates using published watermarks, and publishes all three routes together. A failure before publication leaves the current snapshot unchanged. National and Generator still require reported/received count equality. Facility requires an explicit terminal empty page, stable totals, valid records and unique keys, every requested date, and exact cross-grain key/MW checks. A Facility count mismatch is accepted only when its reported total equals the validated Generator count. The original reported count is retained, not rewritten. Manifests, audits, and API warnings disclose unverified source coverage.
 
 The [ingestion and recovery runbook](docs/EIA_INCREMENTAL_REFRESH.md) documents CLI commands, conflict handling, audits, and filesystem guarantees. Demo data is isolated under Git-ignored `data/eia-demo` and cannot be adopted as a production snapshot.
 

@@ -58,7 +58,7 @@ def test_recorded_keys_measures_and_facets_support_but_do_not_prove_count_hypoth
 
 
 @pytest.mark.parametrize('mode', ['window', 'incremental'])
-def test_cross_route_agreement_does_not_authorize_incomplete_publication(recording, tmp_path, mode):
+def test_recorded_terminal_count_exception_publishes_validated_observations(recording, tmp_path, mode):
     old = json.loads((Path(__file__).parent / 'fixtures/eia_nuclear_sample.json').read_text())
     requested_offsets = defaultdict(list)
     def handler(request):
@@ -79,25 +79,20 @@ def test_cross_route_agreement_does_not_authorize_incomplete_publication(recordi
         return httpx.Response(200, json={'response': page['response'], 'apiVersion': page['api_version']})
     events = []
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
-        with pytest.raises(extraction.ExtractionError):
-            if mode == 'window':
-                extraction.extract(client, KEY, START, END, tmp_path, page_size=200, attempts=1, emit=events.append)
-            else:
-                refresh.refresh(client, KEY, END, tmp_path, start=START, page_size=200, attempts=1, emit=events.append)
+        if mode == 'window':
+            result = extraction.extract(client, KEY, START, END, tmp_path, page_size=200, attempts=1, emit=events.append)
+        else:
+            result = refresh.refresh(client, KEY, END, tmp_path, start=START, page_size=200, attempts=1, emit=events.append)
     assert requested_offsets['facility-nuclear-outages'] == [0, 110]
     assert requested_offsets['generator-nuclear-outages'] == [0]
     assert requested_offsets['us-nuclear-outages'] == [0]
-    assert not list(tmp_path.rglob('current.json'))
+    assert list(tmp_path.rglob('current.json'))
     assert not list(tmp_path.rglob('.staging-*'))
-    assert not list(tmp_path.rglob('*.parquet'))
-    assert events[-1]['published'] is False
+    assert result['validation']['source_completeness'] == 'unverified'
+    assert result['validation']['facility_count_exception'] is True
+    assert result['routes']['facility-nuclear-outages']['reported_total'] == 190
+    assert result['routes']['facility-nuclear-outages']['received_rows'] == 110
     if mode == 'incremental':
-        audits = list((tmp_path / 'ingestion-runs').glob('*.json'))
-        assert len(audits) == 1
-        audit = json.loads(audits[0].read_text())
-        assert audit['status'] == 'failed' and audit['published_snapshot_version'] is None
-        assert any('Incomplete or inconsistent pagination' in f for f in audit['failures'])
-        assert audit['routes']['facility-nuclear-outages']['fetched_rows'] == 110
-        assert audit['routes']['generator-nuclear-outages']['fetched_rows'] == 190
-        assert audit['routes']['us-nuclear-outages']['fetched_rows'] == 2
-        assert all(r['watermark_after'] is None for r in audit['routes'].values())
+        manifest, _, _ = refresh.load_snapshot(tmp_path)
+        assert manifest['ingestion_run']['validation'] == result['validation']
+        assert set(manifest['watermarks'].values()) == {str(END)}

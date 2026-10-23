@@ -50,7 +50,7 @@ I also tested the application myself in a browser, including the latest changes,
 
 ## Remaining limitations
 
-- **Live EIA publication:** production ingestion still rejects the facility endpoint's unresolved reported-total discrepancy. I have not claimed a successful live production refresh. The read-only demo uses recorded observations and intentionally does not publish production data.
+- **Live EIA publication:** production now allows the narrow Facility discrepancy under a terminal-traversal/count/cross-grain policy with durable unverified-source disclosure. Recorded-response publication was verified offline. I have not claimed a successful live production refresh. The read-only demo uses recorded observations and intentionally does not publish production data.
 - **Source findings:** the three findings are one confirmed API count inconsistency and two unusual but internally consistent observations. They do not establish three source-data errors. Matching totals also cannot prove that the source returned every expected record.
 - **Durability:** the interruption tests cover specific simulated failure points and recovery behavior, not every possible power-loss or filesystem failure.
 - **Testing scope:** FastAPI integration tests and jsdom tests do not replace automated end-to-end browser tests or guarantee that a new environment will behave identically.

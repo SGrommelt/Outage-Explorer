@@ -24,11 +24,11 @@ These are the seven main decisions I made for Outage Explorer. For each one, I'v
 
 ## 3. Missing facilities and reconciliation differences
 
-**Choice:** I keep generator records even when their facility is missing from the facility route. I validate each route on its own, then compare generator totals against facility totals and facility totals against national totals. Missing records and signed differences are reported rather than automatically corrected.
+**Choice:** New publications require matching facility/date keys and exact capacity/outage sums across all three freshly fetched grains. Missing parents/children or differences block publication; records are never dropped or balanced to pass. Analytical reconciliation still exposes these conditions in legacy snapshots and synthetic fixtures.
 
 **Alternative rejected:** Dropping generators without a matching facility or adjusting one dataset's totals to make the numbers agree.
 
-**Why:** I don't have enough evidence to treat the facility route as a complete master list. Removing records or forcing totals to match would hide exactly the inconsistencies the analysis should reveal. A reconciliation difference is worth investigating, but it is not automatically proof of bad source data. This policy does not bypass the separate completeness checks for each API route.
+**Why:** I don't have enough evidence to treat the facility route as a complete master list. Removing records or forcing totals to match would hide exactly the inconsistencies the analysis should reveal. A reconciliation difference is worth investigating, but it is not automatically proof of bad source data. The conservative new-publication gate can reject legitimate source-definition differences; legacy analytical reads remain possible. This policy does not certify authoritative source coverage.
 
 **Implementation:** [Reconciliation and diagnostics](apps/backend/src/outage_explorer/diagnostics.py).
 
@@ -64,10 +64,10 @@ These are the seven main decisions I made for Outage Explorer. For each one, I'v
 
 ## 7. Exact numeric values and cautious source acceptance
 
-**Choice:** I store measurements as fixed-precision decimals, validate their types and units, and keep optional descriptive labels nullable. I also keep recorded EIA observations with unresolved completeness questions separate from production snapshots.
+**Choice:** I store measurements as fixed-precision decimals, validate their types and units, and keep optional descriptive labels nullable. Production uses the named `facility_terminal_cross_grain_v1` acceptance policy; the read-only archive/demo remains separate. National/Generator retain reported-total equality; Facility requires terminal traversal and cross-grain validation. A count exception additionally requires Facility reported total to equal validated Generator received count.
 
 **Alternative rejected:** Converting measurements to floating-point values, replacing missing or invalid values with zero, automatically widening unexpected schemas, or treating the number of rows returned by EIA as the authoritative total.
 
-**Why:** Small rounding differences matter when reconciling totals across national, facility, and generator data. I would rather reject a value that does not fit the declared schema than silently change its meaning. The facility API currently reports more records than it returns, so I use those responses for clearly labeled, non-production analysis instead of weakening publication validation. Internally matching totals are useful evidence, but they do not prove that the source data is complete.
+**Why:** Small rounding differences matter when reconciling totals across national, facility, and generator data. I would rather reject a value that does not fit the declared schema than silently change its meaning. The Facility count rule is an explicit acceptance trade-off: internally valid received observations may be published with an unverified-completeness caveat. Reported and received counts and the validation basis remain in manifests/audits; the total is never rewritten. Watermarks mean successfully accepted publication dates, not certified coverage. Internally matching totals are useful evidence, but they do not prove that the source data is complete.
 
 **Implementation:** [Extraction and validation](apps/backend/src/outage_explorer/extract_eia.py).

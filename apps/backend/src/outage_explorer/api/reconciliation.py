@@ -51,7 +51,7 @@ def completeness(request):
     demo = getattr(request.app.state, 'data_mode', 'production') == 'demo'
     return Completeness(mode='demo' if demo else 'production', caveat=(
         'DEMO: saved real EIA data, completeness unverified. The facility API reports inconsistent totals; an empty terminal page and matching aggregates do not resolve that discrepancy. No production publication.'
-        if demo else 'Validated published snapshot. Matching numeric aggregates do not independently certify EIA source coverage.'))
+        if demo else 'Validated published observations; EIA source completeness is unverified. Facility count discrepancies may be accepted only after terminal traversal, matching generator counts and exact cross-grain validation. Matching aggregates do not independently certify source coverage.'))
 
 
 def analyst(user: User = Depends(require_roles(Role.ANALYST, Role.ADMIN))):

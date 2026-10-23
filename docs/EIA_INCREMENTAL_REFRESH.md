@@ -2,9 +2,29 @@
 
 This is the operational runbook for both cumulative refresh and independent date-window extraction. See [implemented schemas](DATA_MODEL.md), [observed wire metadata](EIA_SCHEMA.md), and [real-data findings](../FINDINGS.md).
 
-The refresh command reuses `extract_eia.extract_route`, including its strict date, numeric, natural-key, schema, pagination, total, and daily-coverage checks. It adds cumulative merging, per-route watermarks, run audits, and one atomic publication across all three routes. There are no new dependencies or distributed services.
+The refresh command reuses `extract_eia.extract_route`, including date, numeric, natural-key, schema, bounded pagination, and daily-coverage checks. National/Generator retain strict totals; Facility has a narrow terminal-traversal policy. It adds cumulative merging, per-route watermarks, run audits, and one atomic publication across all three routes. There are no new dependencies or distributed services.
 
-**The [documented facility discrepancy](EIA_PAGINATION_INVESTIGATION.md) is not bypassed.** Recorded responses with 55 rows against `total=95` still fail before publication. These commands describe the workflow, not evidence of a successful live refresh. Incremental success/recovery is tested offline; a successful live production refresh has not been demonstrated. The separate recorded source investigations are historical evidence, not accepted publications.
+**Current acceptance:** the Facility discrepancy is accepted only under `facility_terminal_cross_grain_v1`, described below. Recorded-response publication is verified offline; no successful live refresh is claimed. Source completeness remains unverified and the isolated demo is unchanged.
+
+## Facility acceptance and cross-grain publication gate
+
+`facility_terminal_cross_grain_v1` publishes validated received observations, **not certified EIA coverage**. Facility offsets advance by actual received rows until an explicit empty response within the page budget. Totals must stay stable and received rows cannot exceed the reported total. National and Generator still stop at strict reported/received equality; their checks are unchanged.
+
+For a Facility count mismatch, the reported total must equal the validated Generator received count for the same fetched window. This relation is an observed-shape guard, not proof of count-before-aggregation semantics. No row counts, facilities, or dates are hardcoded.
+
+Before either extraction path publishes, all freshly fetched routes must have exactly matching Facility/date groups and exact Decimal capacity/outage sums per facility and nationally per day. Missing keys, MW gaps, duplicate keys, missing days, malformed responses, unstable totals, failed requests, and missing terminal pages fail closed. This gate also applies when Facility counts agree. It can conservatively reject legitimate source-definition differences; no data are synthesized or forced to balance.
+
+Manifest `routes` entries retain `acceptance_policy`, `reported_total`, `received_rows`, `unique_rows`, `count_agrees`, and `terminal_empty_offset`. `records` is the published cumulative count; the other counts describe this fetched window. Manifest `validation` stores the cross-grain checks, policy, exception flag and unverified-source caveat. Version-2 manifests embed these in the run audit; route audit `acceptance` retains fetched metadata. Readers validate the new metadata and authoritative audit agreement. Older manifests without these fields remain readable. Recovery retains the caveat from the authoritative manifest; later overlap cannot independently certify older history.
+
+Publication, locking, merge/conflict policy, pointer recovery and fsync ordering are unchanged. Watermarks advance only with accepted publication. API job success carries the caveat, and reconciliation explicitly separates internal agreement from source completeness. Shared omissions, zero-valued omitted entities and changing API vintages can evade these checks.
+
+Offline reproduction (temporary snapshots only, no key/network):
+
+```sh
+apps/backend/.venv/bin/python -m pytest apps/backend/tests/test_facility_acceptance.py apps/backend/tests/test_facility_pagination_evidence.py
+```
+
+These tests publish the unchanged retained 30-day response rows (30 national, 1,650 Facility, 2,850 Generator), validate metadata, reruns/overlap, and inject missing rows, mismatches, duplicates, failed traversal and post-pointer interruption. No live production publication is implied.
 
 ## Commands from the repository root
 
@@ -139,7 +159,7 @@ Tests use MockTransport or recorded public responses. They cover bootstrap, expl
 
 Limits remain explicit:
 
-- The EIA facility count discrepancy still blocks the known real window. No watermark is fabricated to get past it.
+- The Facility count discrepancy remains unresolved. Accepted watermarks describe published observations, not independently certified source coverage.
 - Natural keys remain provisional across history. Stable totals and daily coverage do not establish complete historical entity coverage or API snapshot isolation.
 - Overlap only revisits recent stored dates. Older corrections require a separately planned workflow; backward watermark changes and implicit deletions are rejected.
 - Merging validates and rewrites the entire cumulative snapshot in local memory. This is appropriate for small take-home runs, not an arbitrarily large history service.
@@ -160,7 +180,7 @@ Configure `EIA_API_KEY` in `apps/backend/.env` or the environment. Exported valu
 | `--env-file` | `apps/backend/.env` | Explicit module-relative default |
 | `--output-dir` | Refresh: `data/eia/incremental`; windows: `data/eia` | Separate local roots supporting atomic rename |
 
-All three routes use fixed inclusive start/end dates, all three known measures, and ascending `period`, then `facility`/`generator` where applicable. Offset advances by actual received row count. A short page does not imply completion while the reported total says rows remain. Totals must be stable and equal received rows; empty routes, early empty pages, oversize/malformed pages, duplicate candidate keys (including identical duplicates), and missing route-days fail. This conservative acceptance policy is not independent authoritative source-coverage certification.
+All three routes use fixed inclusive start/end dates, all three known measures, and ascending `period`, then `facility`/`generator` where applicable. Offset advances by actual received row count. A short page does not imply completion while the reported total says rows remain. Totals must be stable. National/Generator require received-count equality and reject early empty pages. Facility requires a terminal empty page even after count equality; a short page alone never ends traversal. Its narrower mismatch rules are below. Empty routes, oversize/malformed pages, duplicate keys (including identical duplicates), regressing periods, and missing route-days fail. This conservative acceptance policy is not independent authoritative source-coverage certification.
 
 Metadata must advertise daily data, known dimensions, measures, and expected units; response frequency/date format and API-version consistency are checked. Unexpected row fields require review. The [physical schema and validation rules](DATA_MODEL.md#invalid-records-duplicates-and-relationships) retain exact dates, opaque IDs, optional names, non-null decimal128(24,6) measures, and explicit units. Native decimal JSON numbers, integers, and decimal strings avoid intermediate float conversion. Null/blank/nonfinite/unrepresentable measures fail rather than rounding or zero-filling; finite negative values are retained pending source interpretation. Names may be absent/null without changing identity.
 
@@ -180,7 +200,7 @@ apps/backend/.venv/bin/python -m outage_explorer.extract_eia \
   --page-size 25 --attempts 3 --timeout 20
 ```
 
-`--start` and `--end` are required inclusive daily ISO dates. The historical example currently fails facility completeness, as documented in [FINDINGS.md](../FINDINGS.md#finding-1--facility-api-count-inconsistency); it is not a working-demo startup command.
+`--start` and `--end` are required inclusive daily ISO dates. The historical example previously failed count validation; current acceptance is documented in [FINDINGS.md](../FINDINGS.md#finding-1--facility-api-count-inconsistency); it is not a working-demo startup command.
 
 ```text
 data/eia/
@@ -215,7 +235,7 @@ Ordinary exceptions/SIGINT clean staging; SIGKILL/crashes or failures between ru
 
 ## Diagnostic collection and demonstration
 
-The [schema probe](EIA_SCHEMA.md#evidence-and-reproduction), [dated pagination investigation](EIA_PAGINATION_INVESTIGATION.md), and [30-day findings/replay](../FINDINGS.md#offline-reproduction) retain the historical live results and regression evidence. They do not authorize production acceptance. For the working isolated app, use the [README demo commands](../README.md#quick-start--working-real-data-demo), not either production ingestion command. Demo preparation writes separate `demo.json`/Parquet files, no production pointers/audits/watermarks, and demo refresh fails read-only.
+The [schema probe](EIA_SCHEMA.md#evidence-and-reproduction), [dated pagination investigation](EIA_PAGINATION_INVESTIGATION.md), and [30-day findings/replay](../FINDINGS.md#reproduce-the-results) retain the historical live results and regression evidence. They do not authorize production acceptance. For the working isolated app, use the [README demo commands](../README.md#quick-start-read-only-demo), not either production ingestion command. Demo preparation writes separate `demo.json`/Parquet files, no production pointers/audits/watermarks, and demo refresh fails read-only.
 
 If a separately authorized new diagnostic collection is necessary, use a fresh filename under `eia-analysis` (these commands make live requests):
 

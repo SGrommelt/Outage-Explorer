@@ -32,6 +32,14 @@ def dataset():
             for row in source:
                 rows.append({**row, 'period': period})
         result[route] = {'metadata': item['metadata'], 'rows': rows}
+    # Synthetic balanced grains; the recorded samples are not a complete fleet.
+    for i, row in enumerate(result['generator-nuclear-outages']['rows']):
+        parent = result['facility-nuclear-outages']['rows'][i]
+        row.update(facility=parent['facility'], capacity=parent['capacity'], outage=parent['outage'])
+    for row in result['us-nuclear-outages']['rows']:
+        parents = [r for r in result['facility-nuclear-outages']['rows'] if r['period'] == row['period']]
+        for measure in ('capacity', 'outage'):
+            row[measure] = str(sum(Decimal(r[measure]) for r in parents))
     return result
 
 
@@ -79,7 +87,7 @@ def test_pagination_numeric_conversion_schemas_and_repeat_idempotence(dataset, t
     calls = []
     manifest = run(dataset, tmp_path, handler=handler_for(dataset, calls))
     assert [manifest['routes'][r]['records'] for r in eia.ROUTES] == [3, 18, 18]
-    assert [manifest['routes'][r]['pages'] for r in eia.ROUTES] == [2, 9, 9]
+    assert [manifest['routes'][r]['pages'] for r in eia.ROUTES] == [2, 10, 9]
     for route in eia.ROUTES:
         table = pq.read_table(current(tmp_path) / f'{route}.parquet')
         assert table.schema == eia.schema_for(route)
@@ -294,7 +302,7 @@ def test_structured_failure_logs_and_cli_credentials(dataset, tmp_path, monkeypa
     assert 'Missing EIA_API_KEY' in capsys.readouterr().err
 
 
-def test_observed_overreported_facility_total_blocks_all_publication(dataset, tmp_path):
+def test_unmatched_facility_reported_total_blocks_all_publication(dataset, tmp_path):
     run(dataset, tmp_path)
     before = current(tmp_path), fingerprint(tmp_path)
     events = []
@@ -307,7 +315,7 @@ def test_observed_overreported_facility_total_blocks_all_publication(dataset, tm
             return httpx.Response(200, json=payload)
         return response
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
-        with pytest.raises(eia.ExtractionError, match='Incomplete or inconsistent pagination'):
+        with pytest.raises(eia.ExtractionError, match='Facility count exception'):
             eia.extract(client, KEY, START, END, tmp_path, page_size=2, emit=events.append)
     assert any(e['event'] == 'route_complete' and e['route'] == 'generator-nuclear-outages' for e in events)
     assert (current(tmp_path), fingerprint(tmp_path)) == before
@@ -362,6 +370,16 @@ def test_recorded_oct20_facility_total_95_with_55_rows_preserves_snapshot(tmp_pa
                 for row in page['response']['data'] if row['period'] == str(day)]
         for route in eia.ROUTES
     }
+    # Balance only the synthetic seed; the later 55-row recording is unchanged.
+    for i, row in enumerate(seed_rows['generator-nuclear-outages']):
+        row.update(facility=seed_rows['facility-nuclear-outages'][i]['facility'])
+    for row in seed_rows['facility-nuclear-outages']:
+        children = [g for g in seed_rows['generator-nuclear-outages'] if g['facility'] == row['facility']]
+        for measure in ('capacity', 'outage'):
+            row[measure] = str(sum(Decimal(g[measure]) for g in children))
+    for row in seed_rows['us-nuclear-outages']:
+        for measure in ('capacity', 'outage'):
+            row[measure] = str(sum(Decimal(f[measure]) for f in seed_rows['facility-nuclear-outages']))
     replay_fault = False
     offsets = []
     events = []
@@ -395,7 +413,7 @@ def test_recorded_oct20_facility_total_95_with_55_rows_preserves_snapshot(tmp_pa
         contents_before = {p.name: p.read_bytes() for p in run_dir.iterdir()}
         replay_fault = True
         events.clear()
-        with pytest.raises(eia.ExtractionError, match='Incomplete or inconsistent pagination'):
+        with pytest.raises(eia.ExtractionError, match='Facility count exception'):
             eia.extract(client, KEY, day, day, tmp_path, page_size=100, emit=events.append)
     assert offsets == [0, 55]
     assert [e['records'] for e in events if e['event'] == 'page_complete'

@@ -34,6 +34,9 @@ IDENTIFIERS = {
     "generator-nuclear-outages": ("facility", "generator"),
 }
 DECIMAL_TYPE = pa.decimal128(24, 6)
+FACILITY_POLICY = "facility_terminal_cross_grain_v1"
+SOURCE_CAVEAT = ("Source completeness is unverified. Facility reported totals may differ from delivered rows; "
+                 "terminal traversal and exact cross-grain agreement establish internal validity, not independent EIA coverage.")
 
 
 class ExtractionError(Exception):
@@ -216,6 +219,9 @@ def extract_route(
     offset = 0
     expected_total = None
     schema = schema_for(route)
+    facility = route == "facility-nuclear-outages"
+    terminal = False
+    previous_period = None
     with pq.ParquetWriter(path, schema, compression="zstd") as writer:
         for page_index in range(max_pages):
             body, page_version = fetch("/data/", {**query, "offset": offset})
@@ -233,6 +239,9 @@ def extract_route(
                 raise ExtractionError("Pagination total changed during extraction; retry the window.")
             if total == 0:
                 raise ExtractionError("Empty route result; refusing to publish an empty snapshot.")
+            if facility and not rows and offset:
+                terminal = True
+                break
             if not rows or offset + len(rows) > total:
                 raise ExtractionError("Incomplete or inconsistent pagination.")
             validated = []
@@ -242,6 +251,9 @@ def extract_route(
                 except ExtractionError as exc:
                     emit("invalid_record", route=route, offset=offset, row_index=row_index)
                     raise ExtractionError(f"Invalid record at offset {offset}, row {row_index}: {exc}") from None
+                if previous_period is not None and record['period'] < previous_period:
+                    raise ExtractionError('Pagination period order regressed.')
+                previous_period = record['period']
                 if natural_key in keys:
                     raise ExtractionError("Duplicate candidate natural key; refusing ambiguous pagination/data.")
                 keys.add(natural_key)
@@ -250,7 +262,7 @@ def extract_route(
             writer.write_table(pa.Table.from_pylist(validated, schema=schema))
             offset += len(rows)
             emit("page_complete", route=route, page=page_index + 1, rows=len(rows), records=offset, total=total)
-            if offset == total:
+            if offset == total and not facility:
                 break
         else:
             raise ExtractionError("Page limit reached before completion; nothing published.")
@@ -262,7 +274,68 @@ def extract_route(
         os.fsync(source.fileno())
     emit("route_complete", route=route, records=offset)
     return {"file": path.name, "records": offset, "pages": page_index + 1,
-            "api_version": version, "candidate_key": ["period", *IDENTIFIERS[route]]}
+            "api_version": version, "candidate_key": ["period", *IDENTIFIERS[route]],
+            "acceptance_policy": FACILITY_POLICY if facility else "strict_reported_total_v1",
+            "reported_total": expected_total, "received_rows": offset, "unique_rows": len(keys),
+            "terminal_empty_offset": offset if terminal else None,
+            "count_agrees": offset == expected_total}
+
+
+def validate_acceptance_metadata(routes: dict, validation: dict) -> None:
+    """Validate optional new acceptance metadata without changing legacy manifests."""
+    if (not isinstance(validation, dict) or validation.get('policy') != FACILITY_POLICY
+            or validation.get('source_completeness') != 'unverified'
+            or validation.get('caveat') != SOURCE_CAVEAT
+            or any(validation.get(field) is not True for field in
+                   ('facility_generator_keys_match', 'facility_generator_mw_match', 'daily_mw_match'))):
+        raise ExtractionError('Invalid acceptance validation metadata.')
+    for route in ROUTES:
+        entry = routes[route]
+        received, total = entry.get('received_rows'), entry.get('reported_total')
+        facility = route == 'facility-nuclear-outages'
+        if (type(received) is not int or type(total) is not int or not 0 < received <= total
+                or type(entry.get('unique_rows')) is not int or entry['unique_rows'] != received
+                or entry.get('acceptance_policy') != (FACILITY_POLICY if facility else 'strict_reported_total_v1')
+                or entry.get('count_agrees') is not (received == total)
+                or (facility and entry.get('terminal_empty_offset') != received)
+                or (not facility and received != total)):
+            raise ExtractionError('Invalid route acceptance metadata.')
+    facility = routes['facility-nuclear-outages']
+    mismatch = not facility['count_agrees']
+    if (validation.get('facility_count_exception') is not mismatch
+            or (mismatch and facility['reported_total'] != routes['generator-nuclear-outages']['received_rows'])):
+        raise ExtractionError('Invalid Facility count-exception metadata.')
+
+
+def validate_window(rows: dict[str, list[dict]], routes: dict) -> dict:
+    """Gate publication using the same fetched window, never cumulative/other vintages."""
+    facility_route = 'facility-nuclear-outages'
+    facility = routes[facility_route]
+    if facility['reported_total'] != facility['received_rows']:
+        if facility['reported_total'] != routes['generator-nuclear-outages']['received_rows']:
+            raise ExtractionError('Facility count exception does not match the validated generator count.')
+    with localcontext() as context:
+        context.prec = 60
+        def groups(records, fields):
+            result = {}
+            for row in records:
+                key = tuple(row[f] for f in fields)
+                totals = result.setdefault(key, [Decimal(0), Decimal(0)])
+                for i, measure in enumerate(('capacity', 'outage')):
+                    totals[i] += row[measure]
+            return result
+        facilities = groups(rows[facility_route], ('period', 'facility'))
+        generators = groups(rows['generator-nuclear-outages'], ('period', 'facility'))
+        if facilities.keys() != generators.keys():
+            raise ExtractionError('Facility/generator date-key coverage differs.')
+        if facilities != generators:
+            raise ExtractionError('Facility/generator capacity or outage totals differ.')
+        national = groups(rows['us-nuclear-outages'], ('period',))
+        if any(groups(records, ('period',)) != national for records in rows.values()):
+            raise ExtractionError('National/facility/generator daily capacity or outage totals differ.')
+    return {'policy': FACILITY_POLICY, 'source_completeness': 'unverified', 'caveat': SOURCE_CAVEAT,
+            'facility_generator_keys_match': True, 'facility_generator_mw_match': True,
+            'daily_mw_match': True, 'facility_count_exception': not facility['count_agrees']}
 
 
 def extract(
@@ -318,6 +391,8 @@ def extract(
             active_route = None
             if failed_routes:
                 raise ExtractionError("No snapshot published. " + "; ".join(failed_routes))
+            manifest['validation'] = validate_window(
+                {r: pq.ParquetFile(stage / f'{r}.parquet').read().to_pylist() for r in ROUTES}, manifest['routes'])
             write_json(stage / "manifest.json", manifest)
             sync_directory(stage)
             final_dir = runs_dir / run_id

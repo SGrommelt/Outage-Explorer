@@ -31,6 +31,12 @@ def source():
         for offset in range(7):
             day = (START + timedelta(days=offset)).isoformat()
             result[route]['rows'].extend({**row, 'period': day} for row in templates)
+    # Balance synthetic parent/national totals with the two synthetic generators.
+    for route in ('facility-nuclear-outages', 'us-nuclear-outages'):
+        for row in result[route]['rows']:
+            children = [r for r in result['generator-nuclear-outages']['rows'] if r['period'] == row['period']]
+            for measure in ('capacity', 'outage'):
+                row[measure] = str(sum(Decimal(r[measure]) for r in children))
     return result
 
 
@@ -162,6 +168,10 @@ def test_corrections_require_explicit_replace_policy(source, tmp_path):
     assert failure['status'] == 'failed'
     assert failure['routes']['facility-nuclear-outages']['status'] == 'failed'
     assert any('Conflicting overlap' in msg for msg in failure['failures'])
+    for route in ('generator-nuclear-outages', 'us-nuclear-outages'):
+        changed = [r for r in source[route]['rows'] if r['period'] == str(END)]
+        for i, row in enumerate(changed):
+            row['outage'] = '12.345' if i == 0 else '0'
     result = run(source, tmp_path, overlap_days=1, conflict_policy='replace')
     _, rows, _ = snapshot(tmp_path)
     assert rows['facility-nuclear-outages'][(END, '46')]['outage'] == Decimal('12.345000')
@@ -185,7 +195,7 @@ def test_new_keys_insert_but_missing_old_keys_and_source_duplicates_fail(source,
     assert fingerprint(tmp_path) == before
     assert any('Duplicate' in msg for msg in latest_audit(tmp_path)['failures'])
     source[route]['rows'] = original
-    extra = deepcopy(original[0]); extra['generator'] = '001A'; extra['period'] = str(END)
+    extra = deepcopy(original[0]); extra['generator'] = '001A'; extra['period'] = str(END); extra['capacity'] = '0'; extra['outage'] = '0'
     source[route]['rows'].append(extra)
     run(source, tmp_path, overlap_days=1)
     assert len(snapshot(tmp_path)[1][route]) == 7
@@ -225,7 +235,7 @@ def test_incompatible_or_inconsistent_state_cannot_advance(source, tmp_path, fau
         assert calls == []
 
 
-def test_recorded_facility_discrepancy_still_blocks_refresh_and_watermarks(source, tmp_path):
+def test_recorded_facility_rows_cannot_replace_conflicting_synthetic_snapshot(source, tmp_path):
     run(source, tmp_path, start=START)
     before = fingerprint(tmp_path)
     recording = json.loads((Path(__file__).parent / 'fixtures/eia_facility_pagination_2026-10-20.json').read_text())
@@ -244,7 +254,7 @@ def test_recorded_facility_discrepancy_still_blocks_refresh_and_watermarks(sourc
     assert fingerprint(tmp_path) == before
     audit = latest_audit(tmp_path)
     assert audit['routes']['facility-nuclear-outages']['fetched_rows'] == 55
-    assert any('Incomplete or inconsistent pagination' in f for f in audit['failures'])
+    assert any('Conflicting overlap' in f for f in audit['failures'])
     assert snapshot(tmp_path)[0]['watermarks'] == {r: str(END) for r in extractor.ROUTES}
 
 

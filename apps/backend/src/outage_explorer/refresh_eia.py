@@ -110,6 +110,8 @@ def load_snapshot(root: Path) -> tuple[dict, dict, str]:
         watermarks[route] = max(key[0] for key in rows[route]).isoformat()
     if set(watermarks.values()) != {end.isoformat()}:
         raise Error("Route watermarks are inconsistent with daily coverage.")
+    if 'validation' in manifest or any('acceptance_policy' in r for r in manifest['routes'].values()):
+        extraction.validate_acceptance_metadata(manifest['routes'], manifest.get('validation'))
     if manifest["schema_version"] == 2:
         if manifest.get("watermarks") != watermarks or manifest.get("snapshot_version") != directory.name:
             raise Error("Stored watermarks or snapshot version are inconsistent.")
@@ -118,12 +120,17 @@ def load_snapshot(root: Path) -> tuple[dict, dict, str]:
                 or embedded.get("status") != "published"
                 or embedded.get("published_snapshot_version") != directory.name):
             raise Error("Snapshot ingestion metadata is inconsistent.")
+        if 'validation' in manifest and embedded.get('validation') != manifest['validation']:
+            raise Error('Snapshot acceptance audit differs from manifest.')
         entries = embedded.get("routes")
         if (embedded.get("requested_end") != end.isoformat()
                 or not embedded.get("finished_at_utc") or embedded.get("failures") != []
                 or not isinstance(entries, dict) or set(entries) != set(ROUTES)):
             raise Error("Snapshot ingestion metadata is inconsistent.")
         for route, entry in entries.items():
+            if 'validation' in manifest and (not isinstance(entry, dict) or entry.get('acceptance') != {
+                    **manifest['routes'][route], 'records': manifest['routes'][route]['received_rows']}):
+                raise Error('Snapshot route acceptance audit differs from manifest.')
             if (not isinstance(entry, dict) or entry.get("status") != "published"
                     or entry.get("watermark_after") != watermarks[route]
                     or type(entry.get("merged_rows")) is not int
@@ -303,6 +310,7 @@ def refresh(
                 manifest = {"schema_version": 2, "snapshot_version": run_id,
                             "start": dataset_start.isoformat(), "end": end.isoformat(),
                             "created_at_utc": now(), "routes": {}, "watermarks": {}}
+                fetched_window = {}
                 for route in ROUTES:
                     entry = audit["routes"][route]
                     entry["status"] = "running"
@@ -312,6 +320,7 @@ def refresh(
                         fetched = extraction.extract_route(client, route, key, start, end, path,
                                                            page_size, max_pages, attempts, backoff, sleep, progress)
                         incoming = validated_rows(path, route, start, end)
+                        fetched_window[route] = list(incoming.values())
                         merged, counts = merge_rows(old[route], incoming, start, end, conflict_policy)
                         rows = [merged[k] for k in sorted(merged)]
                         pq.write_table(pa.Table.from_pylist(rows, schema=extraction.schema_for(route)),
@@ -323,7 +332,7 @@ def refresh(
                             os.fsync(source.fileno())
                         watermark = max(k[0] for k in checked).isoformat()
                         entry.update(status="validated", fetched_rows=fetched["records"],
-                                     merged_rows=len(checked), **counts)
+                                     merged_rows=len(checked), acceptance=fetched, **counts)
                         manifest["routes"][route] = {**fetched, "records": len(checked)}
                         manifest["watermarks"][route] = watermark
                     except Error as exc:
@@ -333,6 +342,8 @@ def refresh(
                     save()
                 if audit["failures"]:
                     raise Error("Refresh failed validation; no snapshot published.")
+                manifest['validation'] = extraction.validate_window(fetched_window, manifest['routes'])
+                audit['validation'] = manifest['validation']
                 if set(manifest["watermarks"].values()) != {end.isoformat()}:
                     raise Error("Merged route watermarks disagree.")
                 audit.update(status="published", finished_at_utc=now(), published_snapshot_version=run_id)

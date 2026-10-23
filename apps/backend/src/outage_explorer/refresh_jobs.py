@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from outage_explorer.analytics import DEFAULT_SNAPSHOT_ROOT, VIEWS
 from outage_explorer import refresh_eia as pipeline
+from outage_explorer.extract_eia import SOURCE_CAVEAT
 from outage_explorer.explore_eia import DEFAULT_ENV, ExplorationError, load_api_key
 
 ROUTE_NAMES = {route: name for name, (route, _) in VIEWS.items()}
@@ -166,7 +167,8 @@ class RefreshJobs:
             counts[name] = count
         return {'row_counts': counts, 'status': 'succeeded', 'published': not no_op,
                 'outcome': 'no_op' if no_op else 'published', 'error': None,
-                'warning': ('Snapshot published, but a post-publication operation failed.' if recovered else None)}
+                'warning': ('Snapshot published, but a post-publication operation failed. ' + SOURCE_CAVEAT if recovered
+                            else SOURCE_CAVEAT if result.get('validation') else None)}
 
     def _run(self, job_id: str) -> None:
         record = self._jobs[job_id]
