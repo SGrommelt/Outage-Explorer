@@ -1,6 +1,6 @@
 # Outage Explorer
 
-Outage Explorer is a full-stack application built for the Arkham Technologies technical challenge. It lets users explore U.S. nuclear outage data from the EIA at three levels: national, facility, and generator.
+Outage Explorer is a full-stack application that lets users explore U.S. nuclear outage data from the EIA at three levels: national, facility, and generator.
 
 The project includes a data extraction and refresh pipeline, a validated Parquet data model, role-based APIs, reconciliation tools, a restricted SQL explorer, and a React interface.
 
