@@ -1,8 +1,8 @@
-# Real-data findings
+# EIA Data Findings and Reconciliation
 
-## Scope and provenance
+## Dataset and evidence
 
-The evidence covers **September 22–October 21, 2026 inclusive: 30 consecutive days** from the EIA national, facility, and generator nuclear-outage routes. It is **non-production evidence with unverified source completeness**, not an accepted production snapshot.
+I analyzed **30 consecutive days (September 22–October 21, 2026)** from EIA's national, facility, and generator nuclear-outage routes. I kept these responses as **non-production evidence** because the facility endpoint reports more rows than it returns. I can validate the records I received, but I cannot independently confirm that the source returned every expected record.
 
 - [Sanitized source archive](docs/evidence/eia-real-30-days-source.json.gz): exact retained response bodies, credential-free query parameters, metadata, API version `2.1.14`, per-response checksums, timestamps, and failure history; approximately 61 KB compressed.
 - [Reconciliation summary](docs/evidence/eia-real-30-days-summary.json): archive SHA-256, coverage/counts, daily comparisons, representative facility comparisons, and the historical anomaly assessment.
@@ -12,7 +12,7 @@ Collection began `2026-10-21T20:43:21.751480Z`; targeted resume began `2026-10-2
 
 Collection used sequential 1,000-row pages, ascending period/identifier ordering, at most eight pages per route, two attempts per request, a quarter-second interval, and a 36-attempt budget shared across resumptions. Offset pagination does not provide source snapshot isolation. Checksums detect accidental changes; they are not EIA signatures or independent provenance certification. Earlier independent single-/two-day controls are preserved in the [dated investigation](docs/EIA_PAGINATION_INVESTIGATION.md).
 
-## Coverage and pagination
+## Data coverage
 
 | Route | Returned / validated unique rows | Dates present | Reported total | Page row counts, including terminal page |
 | --- | ---: | ---: | ---: | --- |
@@ -20,13 +20,13 @@ Collection used sequential 1,000-row pages, ascending period/identifier ordering
 | `facility-nuclear-outages` | 1,650 / 1,650 | 30 | 2,850 | 1,000, 650, 0 |
 | `generator-nuclear-outages` | 2,850 / 2,850 | 30 | 2,850 | 1,000, 1,000, 850, 0 |
 
-Every returned date has one national row, 55 facilities, and 95 generators. Received records pass required-field, units, date-window, exact decimal precision, and provisional natural-key checks. No duplicate keys were observed. These checks describe the received population, not an independent fleet inventory.
+Each date contains one national row, 55 facility rows, and 95 generator rows. All received records passed required-field, unit, date-window, decimal-precision, and provisional natural-key validation. I found no duplicate keys. This establishes the consistency of the received records, not the completeness of the underlying fleet inventory.
 
-## Reconciliation method and verified matching results
+## Reconciliation results
 
-Offline replay reuses `schema_for`/`validate_record`, analytical `VIEWS`, and the existing `reconcile_daily`, `reconcile_facilities`, and `find_anomalies` functions in an isolated in-memory DuckDB connection. Generators are aggregated to `(date, facility)` before comparison with facility observations. Each grain is independently aggregated by date for national comparisons. Parent/child rows are never joined and then summed in a way that multiplies parent values. Percentages are not summed; all MW gaps use exact decimal arithmetic, with no tolerance needed for this evidence.
+I replayed the saved responses using the same record validation, analytical views, and reconciliation functions as the application. I grouped generator rows by date and facility before comparing them with facility totals. For national comparisons, I aggregated each route separately by date to avoid double-counting facility values. I compared capacity and outage in MW using exact decimal arithmetic; percentages were not summed.
 
-**All 30 daily comparisons and all 1,650 facility-day comparisons match exactly for capacity and outage MW.** There are no unmatched facility/generator groups. The six daily pairwise gaps (facility−national, generator−national, generator−facility, for both measures) are all `0.000000 MW`.
+**All 30 daily comparisons and all 1,650 facility-day comparisons matched exactly for capacity and outage MW.** There were no unmatched facility/generator groups. Every daily pairwise difference between national, facility, and generator totals was `0.000000 MW` for both measures.
 
 Each pair below is **(capacity MW, outage MW)**:
 
@@ -42,19 +42,19 @@ Each pair below is **(capacity MW, outage MW)**:
 | 2026-10-06 | 6008 | 3 | 4003.000000 | 1333.000000 | 0.000000 / 0.000000 |
 | 2026-10-21 | 3166 | 2 | 2694.100000 | 1346.700000 | 0.000000 / 0.000000 |
 
-These are matching examples, **not anomalies**. The results demonstrate internal consistency under these comparisons. Shared omissions, definitions, or revisions can still exist. No actual nonzero cross-grain MW discrepancy was found to explain away.
+These examples show matching totals, **not anomalies**. The results support internal consistency, but matching totals cannot rule out shared omissions or differences in source definitions. I did not observe a nonzero cross-grain MW gap.
 
 ## Finding 1 — Facility API count inconsistency
 
-**Classification: verified API/metadata inconsistency. Anomaly does not necessarily mean erroneous data.** Only this count issue is a verified inconsistency; findings 2 and 3 are internally consistent observations, not confirmed source defects.
+**Classification: verified API count inconsistency.** This is the only finding that demonstrates a clear inconsistency in the API responses. Findings 2 and 3 are unusual observations, not confirmed source-data errors.
 
 The facility route reports **2,850** records, returns **1,650** unique facility-day rows, then returns an empty array at offset **1,650**, while still reporting 2,850. The difference is **1,200 counted items**, whose meaning is unresolved; it is not evidence that 1,200 identifiable facility rows are missing.
 
 Independent earlier controls reproduced 55/95 and an empty offset-55 page on October 20; October 18–19 returned 110/190 with an empty offset-110 page. A filtered three-generator facility (`3265`) returned two facility rows for two days but reported six, while a one-generator facility (`1715`) returned/reported two. Smaller pages, reversed ordering, and capacity-only projection did not repair the discrepancy. Exact recordings and request scope are in the [investigation](docs/EIA_PAGINATION_INVESTIGATION.md#targeted-follow-up-october-1819-2026).
 
-**Hypothesis, not an established root cause:** EIA may count underlying generator rows before facility aggregation. The reviewed [API guide](https://www.eia.gov/opendata/documentation.php) supplies no confirmed facility-specific exception establishing that interpretation. Alternative explanations include different source populations/filters or API count/coverage defects. Related-grain equality cannot distinguish all these possibilities.
+**Possible explanation, not a confirmed cause:** EIA may count generator-level records before returning facility-level aggregates. The [API documentation](https://www.eia.gov/opendata/documentation.php) does not confirm that interpretation. Different filters, source populations, or a counting defect are also possible; matching MW totals cannot distinguish them.
 
-**Handling:** production extraction rejects the early empty page. No partial snapshot is published and failed pre-publication refreshes do not advance watermarks. The isolated archive/demo retains both reported and actual counts and the explicit caveat. Resolving production acceptance requires authoritative count semantics/corrected totals or an independently justified completeness source, not a hardcoded facility count or silent total override.
+**How the application handles it:** production extraction rejects the early empty page instead of accepting a potentially incomplete dataset. Failed pre-publication runs do not publish partial data or advance watermarks. The isolated demo keeps the observations available with an explicit completeness warning. I did not hardcode an expected facility count or override the reported total to force a successful refresh. Production acceptance would require confirmed count semantics, corrected totals, or independent evidence of completeness.
 
 Historical validation on October 21 for October 20 used page size 25, a 20-second timeout, and up to three attempts: national 1/1, facility 55/95 (25, 25, 5, then empty), generator 95/95. All 151 received records passed individual validation; the diagnostic finished in approximately 4.8 seconds without retries. It exited 1, removed staging, and published nothing. The [recorded regression](apps/backend/tests/test_extract_eia.py) checks preservation of a prior valid same-window publication. This is a historical run outcome, not a statement about files currently on a developer machine.
 
@@ -62,7 +62,7 @@ This is **one API metadata/pagination anomaly**, not one anomaly per date, facet
 
 ## Finding 2 — Synchronized capacity reporting change
 
-**Classification: unusual structural/reporting observation, not a confirmed source defect.**
+**Classification: unusual capacity reporting pattern, not a confirmed data error.**
 
 National capacity rises from **97620.5 MW** to **100056.7 MW**, a **2436.2 MW** step (**approximately 2.495582%**). The received population contains the same 55 facility IDs and 95 `(facility, generator)` identities on every day. All capacity changes occur on October 1: **47/55 facilities (85.454545%) and 78/95 generators (82.105263%)** increase; eight facilities and 17 generators are unchanged. At each lower grain, stable-key changes sum exactly to 2436.2 MW; added/removed capacity contributions are zero.
 
@@ -72,15 +72,15 @@ National capacity rises from **97620.5 MW** to **100056.7 MW**, a **2436.2 MW** 
 | 3166 | 2 | 1264.7 | 1346.7 | +82.0 |
 | 7722 | 1 | 1123 | 1179 | +56 |
 
-**Verified:** existing identifiers account numerically for the full step; observed membership change does not. **Unconfirmed:** a coordinated rating refresh or seasonal capacity basis could explain it. EIA's [capacity FAQ](https://www.eia.gov/tools/faqs/faq.php?id=101) distinguishes summer/winter ratings, while the [nuclear data index](https://www.eia.gov/nuclear/data.php) labels the outage product as using annual capacity. Neither reviewed reference nor retained metadata establishes an October 1 rule. One collected vintage cannot prove revisions to previously published values. No verified invariant requires capacity to remain constant, so this is not a confirmed defect or three separate anomalies.
+The existing facility and generator IDs account for the full change; no membership change explains it. A coordinated capacity-rating update is one possible explanation, but I could not confirm it. EIA's [capacity FAQ](https://www.eia.gov/tools/faqs/faq.php?id=101) discusses seasonal ratings, while its [nuclear data index](https://www.eia.gov/nuclear/data.php) describes annual capacity for this product. Neither establishes an October 1 rule. I therefore treat this as a pattern worth investigating, not proof of an error or a historical revision.
 
-The product preserves each day's capacity and uses that day's national denominator for fleet offline share. Valid capacity changes alone do not fail ingestion. The offline inspector inventories the changes; there is no specialized automatic UI warning.
+**How the application handles it:** the application preserves each day's reported capacity and uses that day's national denominator for fleet offline share. Valid capacity changes do not fail ingestion. The offline inspector reports the changes, but the UI does not show a dedicated warning.
 
 **Why unusual:** all 78 generator changes occur on this boundary; the other 28 daily transitions have none. Capacities are stable within September 22–30 and October 1–21. Among affected generators, increases range from 1 to 82 MW (linear-interpolated Q1 22 MW, median 29.85 MW, Q3 37.8 MW). This synchronization is exceptional within the received window, without establishing long-term rarity.
 
 ## Finding 3 — October 3 fleet-wide outage increase
 
-**Classification: exploratory operational outlier, not a source-data error.** Between October 2 and October 3, 2026, national outage increases from **12295.214 to 16107.683 MW**, a **3812.469 MW** increase. Capacity remains **100056.7 MW**; fleet offline share rises approximately **3.810309 percentage points**.
+**Classification: unusual daily outage change, not a confirmed source-data error.** Between October 2 and October 3, 2026, national outage increases from **12295.214 to 16107.683 MW**, a **3812.469 MW** increase. Capacity remains **100056.7 MW**; fleet offline share rises approximately **3.810309 percentage points**.
 
 The comparison population is all **29 adjacent daily national absolute outage changes** in the archive. Quartiles use **type-7 linear interpolation at index `(n−1)×p`** in the sorted sample. Q1 is **48.872 MW**, Q3 **1047.235 MW**, and IQR **998.363 MW**. The conventional exploratory upper fence `Q3 + 1.5×IQR` is **2544.7795 MW**. October 3 is the **only** absolute daily change strictly above this fence; the second largest is 2483.251 MW. The fence is computed from the archive, not a configured production threshold.
 
@@ -99,11 +99,11 @@ The comparison population is all **29 adjacent daily national absolute outage ch
 
 Generator membership is unchanged and contributions sum exactly to the national increase. Capacity is unchanged on these dates, distinguishing this event from finding 2. Legitimate operating/maintenance changes can produce such a surge; no common cause or reporting error is established.
 
-**Handling:** the national chart/table, authorized SQL, and reconciliation expose the observations. Reconciliation correctly reports matching aggregates. The offline inspector flags this exploratory outlier; the application has no specialized automatic warning. Existing large-change diagnostics remain opt-in with a caller-supplied threshold.
+**How the application handles it:** the national chart, table, authorized SQL, and reconciliation show the recorded values. The offline inspector identifies the outlier using the method described here. The UI does not show a dedicated outlier warning, and the existing large-change diagnostic requires a caller-supplied threshold.
 
 **Statistical limitations:** 30 days provide only 29 transitions, with dependence and seasonal effects. This is an in-window descriptive screen, not a significance test or long-term baseline. Signed-change screening is a different question and also flags October 12 and October 15; the absolute-change population is stated explicitly rather than presenting the result as method-independent.
 
-## Other checks and weaker candidates
+## Additional validation checks
 
 There are zero membership changes, temporal label changes, missing labels, or facility/generator label disagreements in the archive. Existing diagnostics find zero missing route dates, invalid required records, duplicate keys, negative capacity/outage, outage-above-capacity, or percentages outside 0–100 across the **4,530** observations.
 
@@ -119,15 +119,15 @@ Representative maximum absolute percentage gaps (calculated ratios/gaps below ar
 
 Ordinary rounding is not counted as an anomaly. Automatic large-change flags require a justified caller-supplied threshold; normal outage starts/ends are not automatically bad data. Range flags are review candidates, not claims about universal EIA constraints. Synthetic mismatch/invalid fixtures prove detection behavior, not real anomaly evidence.
 
-## Interpretation and product boundaries
+## What the findings mean
 
-The three primary findings address distinct delivery, capacity-reporting, and outage-behavior categories. They reasonably address the challenge's broad anomaly wording; they do **not** establish three source-data defects. Zero confirmed source-data defects were found. Matching aggregates do not certify source completeness; **Facility source completeness remains unverified and production publication remains blocked**.
+I chose these three findings because they address different questions: whether the API returns the number of rows it reports, whether reported capacity changes unexpectedly, and whether daily outage levels show unusually large movements. **They are not three confirmed source-data defects.** I did not establish an error in the received measurement values. Matching totals do not certify completeness; **the facility route remains unresolved and production publication remains blocked**.
 
 Clinton 204/1 (October 19–21: 0 → 11.071 → 0 MW) and Vogtle 649/3 (October 11–13: 0 → 77.98 → 0 MW) are not additional primary anomalies. There are 22 exact three-day reversals across 15 generators. Palo Verde's full-outage transition contributes to finding 3 and is not counted separately. Ordinary rounding and synthetic fixtures are not real anomalies.
 
-The read-only demo exposes these received observations without certifying source completeness. Analyst/Admin reconciliation reports exact gaps and observed missing keys with evidence-based reasons, never invented causes. Missing/invalid comparisons are unavailable; zero-valued orphan groups and offsetting facility gaps are detected by synthetic regressions. Viewer can access only national data/metric, not reconciliation or lower grains. Demo refresh explicitly fails without EIA calls or production state changes. [Demo startup](README.md#quick-start--working-real-data-demo) and [model/validation](docs/DATA_MODEL.md) describe these boundaries.
+The read-only demo exposes these received observations without certifying source completeness. Analyst/Admin reconciliation reports exact gaps and observed missing keys with evidence-based reasons, never invented causes. Missing/invalid comparisons are unavailable; zero-valued orphan groups and offsetting facility gaps are detected by synthetic regressions. Viewer can access only national data/metric, not reconciliation or lower grains. Demo refresh explicitly fails without EIA calls or production state changes. [Demo startup](README.md#quick-start-read-only-demo) and [model/validation](docs/DATA_MODEL.md) describe these boundaries.
 
-## Offline reproduction
+## Reproduce the results
 
 Run from the repository root with backend dependencies installed. No API key or live request is needed; generated outputs stay in Git-ignored `data/eia-analysis` and never update production pointers/audits/watermarks:
 
@@ -144,6 +144,6 @@ apps/backend/.venv/bin/python -m pytest \
   apps/backend/tests/test_reconciliation_api.py
 ```
 
-**Reproduce each finding with the `inspect` command above:** finding 1 is in `route_counts` (also `analyse.routes`), finding 2 in `capacity_changes` and `capacity_decomposition`, and finding 3 in `national_daily_outage_changes` and `outage_change_screening`. All use the same saved source archive linked above; no API key is loaded. Generator contributions are included for every adjacent national transition. Empty samples have null quartiles/fence; constant samples have no strictly-above-fence observations.
+**To reproduce the findings**, run `inspect` and check `route_counts` for finding 1, `capacity_changes` and `capacity_decomposition` for finding 2, and `national_daily_outage_changes` and `outage_change_screening` for finding 3. The `analyse` output also includes route counts and reconciliation results. Both commands use the same saved archive without an API key or live EIA requests.
 
 The first output includes all daily/facility comparisons and original counts; the second additionally includes stable-ID changes, ratio candidates, and attributes. The saved summaries provide compact pinned examples. The [source-schema observations](docs/EIA_SCHEMA.md) and [historical investigation](docs/EIA_PAGINATION_INVESTIGATION.md) retain metadata, controls, source links, and request/failure ledgers. No new collection is needed to reproduce these findings.
