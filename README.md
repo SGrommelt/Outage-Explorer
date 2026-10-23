@@ -52,6 +52,45 @@ Windows, network filesystems, and object storage have not been validated for pro
 
 Unless a section explicitly says otherwise, run all commands from the **repository root**. Backend and frontend configuration files live inside their respective app directories; there is no root `.env`. Never put secrets in `VITE_*` variables, which are exposed to the browser. The documented backend module is `outage_explorer.main:app` for production and `outage_explorer.demo:app` for the demo (not `outage_explorer.api.main:app`).
 
+### Windows development through WSL2
+
+Windows is not a supported native runtime for the refresh and publication pipeline because the backend uses POSIX file locking, atomic renames, and directory synchronization. On Windows, use WSL2 with Ubuntu and keep the repository on the Linux filesystem rather than under `/mnt/c`.
+
+From an elevated PowerShell terminal, install Ubuntu 24.04 if it is not already available:
+
+```powershell
+wsl --install -d Ubuntu-24.04
+```
+
+Restart Windows if WSL requests it, then open Ubuntu:
+
+```powershell
+wsl -d Ubuntu-24.04
+```
+
+Inside Ubuntu, install the required tools:
+
+```sh
+sudo apt update
+sudo apt install -y python3.12 python3.12-venv python3.12-dev curl git build-essential
+
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source "$HOME/.nvm/nvm.sh"
+nvm install 20
+nvm alias default 20
+```
+
+Clone the repository inside Ubuntu, for example under `~/projects`, and continue with the quick start commands below from that Linux checkout:
+
+```sh
+mkdir -p ~/projects
+cd ~/projects
+git clone <repository-url> Outage-Explorer-main
+cd Outage-Explorer-main
+```
+
+The backend and frontend remain available from Windows at `http://127.0.0.1:8000` and `http://localhost:5173` while their processes run inside WSL2.
+
 ## Quick start: read-only demo
 
 This is the easiest way to explore the application. It does **not** need an EIA API key or an internet connection to EIA.
