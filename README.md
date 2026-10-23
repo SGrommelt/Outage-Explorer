@@ -4,7 +4,7 @@ Outage Explorer is a full-stack application built for the Arkham Technologies te
 
 The project includes a data extraction and refresh pipeline, a validated Parquet data model, role-based APIs, reconciliation tools, a restricted SQL explorer, and a React interface.
 
-**Recommended starting point: the read-only demo.** It runs on recorded EIA observations from September 22 to October 21, 2026, without an API key or live requests. The facility API reports a higher row count than it returns. Production now has a narrow, explicitly source-unverified acceptance policy; the demo remains isolated and read-only. The discrepancy and two unusual patterns in the recorded data are documented in [FINDINGS.md](FINDINGS.md).
+**Recommended starting point: the read-only demo.** It uses recorded EIA observations from September 22 to October 21, 2026, allowing reviewers to explore the application without configuring an API key or making live EIA requests. The demo includes the same analytical capabilities and role-based access controls as the production application, while keeping its data and refresh operations isolated.
 
 ## What you can do
 
@@ -50,7 +50,7 @@ The [data model and ER diagram](docs/DATA_MODEL.md#logical-er-diagram) explain t
 
 Windows, network filesystems, and object storage have not been validated for production publication.
 
-Run the following commands from the **repository root**. Backend and frontend configuration files live inside their respective app directories; there is no root `.env`. Never put secrets in `VITE_*` variables, which are exposed to the browser.
+Unless a section explicitly says otherwise, run all commands from the **repository root**. Backend and frontend configuration files live inside their respective app directories; there is no root `.env`. Never put secrets in `VITE_*` variables, which are exposed to the browser. The documented backend module is `outage_explorer.main:app` for production and `outage_explorer.demo:app` for the demo (not `outage_explorer.api.main:app`).
 
 ## Quick start: read-only demo
 
@@ -138,28 +138,55 @@ npm run build
 
 Backend tests cover validation, ingestion and recovery, authorization, SQL restrictions, reconciliation, and recorded EIA evidence. Frontend tests use jsdom and mocked HTTP. These tests do not require a live EIA connection or API key.
 
-I also tested the application manually in a browser, including the latest changes. These manual checks are separate from the automated suites; there is no automated browser end-to-end test suite. See [NOTES.md](NOTES.md) for verification details and AI assistance disclosure.
+I also tested the application manually in a browser, including the latest changes, using the demo and the non-demo frontend connected to a local production backend with a published live-EIA snapshot. The three roles, dataset access, pagination, SQL Explorer, and Admin refresh status were checked. These manual checks are separate from the automated suites; there is no automated browser end-to-end test suite. See [NOTES.md](NOTES.md) for verification details and AI assistance disclosure.
 
 ## Production ingestion and refresh
 
-The production pipeline can publish internally validated observations using the **`facility_terminal_cross_grain_v1`** policy. Offline recorded-response replay successfully published the 30-day window through both extraction and incremental refresh. **No live refresh was run to verify this change; EIA source completeness remains unverified.**
+The production pipeline publishes internally validated observations using the **`facility_terminal_cross_grain_v1`** policy. Recorded-response replay successfully published the 30-day window through both extraction and incremental refresh.
 
-Stop the demo backend before starting the production backend on the same port:
+A live EIA smoke test on October 23, 2026, fetched observations for **October 20, 2026** and published all three routes: **1 National, 55 Facility, and 95 Generator** rows. The published snapshot, watermarks, validation metadata, and run audit were checked. A second live refresh for the same date published a new immutable snapshot version with identical logical rows and unchanged watermarks. The Admin refresh endpoint and the browser's Admin refresh flow were also checked with a successful **no-op** request (no new data to fetch). These checks were performed against a local, isolated data directory, not a deployed service. **EIA source completeness remains unverified.**
+
+### Run the production backend locally
+
+Stop the demo backend before starting the production backend on the same port. From the **repository root**, run:
 
 ```sh
 apps/backend/.venv/bin/python -m uvicorn outage_explorer.main:app \
   --host 127.0.0.1 --port 8000
 ```
 
-Start the frontend in production mode:
+In a second terminal, from the **repository root**, start the frontend in non-demo mode:
 
 ```sh
 VITE_DEMO_MODE=false VITE_API_BASE_URL=/api npm run dev
 ```
 
-Production reads only snapshots published under `data/eia/incremental`. It never falls back to demo data, and analytical endpoints return `503` until a valid published snapshot is available.
+Open the Vite URL (usually `http://localhost:5173`) and sign in with the credentials created by `seed_auth`. The Vite development proxy forwards `/api` to **`http://127.0.0.1:8000`**. Keep `VITE_API_BASE_URL=/api` when using this proxy; pointing the browser directly at a different backend port bypasses the proxy and can trigger a CORS preflight failure. This is a local development setup connected to the production application entry point, not a public deployment.
 
-For an explicitly authorized live run, configure `EIA_API_KEY` in `apps/backend/.env` or the environment. An Admin can submit `POST /refresh` and poll `GET /refresh/{job_id}`. Refresh jobs run asynchronously inside a **single API worker**; job tracking is lost when that process restarts, although pipeline audits are stored on disk.
+Production reads only snapshots published under `data/eia/incremental`, **relative to the backend process's working directory**. When launched from the repository root, that means `<repository-root>/data/eia/incremental`. It never falls back to demo data, and analytical endpoints return `503` until a valid published snapshot is available. A fresh checkout will therefore need an initial publication before production data can be browsed.
+
+### Publish or refresh data
+
+For an explicitly authorized live run, configure `EIA_API_KEY` in `apps/backend/.env` or the environment. To perform a small **first publication** from the repository root, for example for October 20, 2026, use:
+
+```sh
+apps/backend/.venv/bin/python -m outage_explorer.refresh_eia \
+  --env-file apps/backend/.env \
+  --output-dir data/eia/incremental \
+  --start 2026-10-20 \
+  --end 2026-10-20 \
+  --page-size 50 \
+  --max-pages 4 \
+  --attempts 2 \
+  --backoff 1 \
+  --timeout 20
+```
+
+This example makes live EIA requests, requires a valid key, and is intended only for a small verification window; the API may change or reject requests. Check for `refresh_published` and inspect the audit. Do not assume that a successful request establishes complete source coverage. The runbook describes larger windows, incremental refreshes, and failure recovery.
+
+Alternatively, an Admin can submit `POST /refresh` through the API or the frontend and poll `GET /refresh/{job_id}`. **Supply an initial start date only for the first publication.** Once a snapshot exists, leave the frontend's *Initial start date* empty: subsequent runs derive their start from published watermarks. Supplying `start_date` with an existing snapshot is rejected without changing the published snapshot. An end date equal to the current watermark with zero overlap produces a successful `no_op` without fetching new data.
+
+Refresh jobs run asynchronously inside a **single API worker**; job tracking is lost when that process restarts, although pipeline audits are stored on disk.
 
 The pipeline validates each route, retries bounded transient failures, merges overlapping dates using published watermarks, and publishes all three routes together. A failure before publication leaves the current snapshot unchanged. National and Generator still require reported/received count equality. Facility requires an explicit terminal empty page, stable totals, valid records and unique keys, every requested date, and exact cross-grain key/MW checks. A Facility count mismatch is accepted only when its reported total equals the validated Generator count. The original reported count is retained, not rewritten. Manifests, audits, and API warnings disclose unverified source coverage.
 
