@@ -148,6 +148,14 @@ A live EIA smoke test on October 23, 2026, fetched observations for **October 20
 
 ### Run the production backend locally
 
+Before fetching live data, add a valid EIA API key to `apps/backend/.env` (created during the demo setup):
+
+```dotenv
+EIA_API_KEY=your_eia_api_key_here
+```
+
+The key is not included in the repository. The production backend can start without it, but live ingestion and refresh require a valid key. A fresh checkout also has no published production snapshot, so data endpoints remain unavailable until the first successful publication. Keep the key in backend configuration only; never put it in a `VITE_*` variable or commit `.env`.
+
 Stop the demo backend before starting the production backend on the same port. From the **repository root**, run:
 
 ```sh
@@ -167,7 +175,11 @@ Production reads only snapshots published under `data/eia/incremental`, **relati
 
 ### Publish or refresh data
 
-For an explicitly authorized live run, configure `EIA_API_KEY` in `apps/backend/.env` or the environment. To perform a small **first publication** from the repository root, for example for October 20, 2026, use:
+There are **two alternative ways** to publish or refresh production data: use the Admin interface (or its API), **or** run the command-line pipeline. **Choose one; you do not need to run both.** When run from the repository root with the documented paths, both publish to the same production data directory and use the same ingestion and validation logic.
+
+**Option A — Admin interface:** Sign in as `admin`, open **Refresh**, and enter a **First publication start date** and **Refresh through** date for the initial publication. Submit the job and wait for its status to show success. On subsequent refreshes, leave **First publication start date** empty: the pipeline derives its starting point from published watermarks. An explicit start date with an existing snapshot is rejected without modifying the published data. An end date equal to the current watermark with zero overlap produces a successful `no_op` without fetching new data. The same operation is available through `POST /refresh`, with status at `GET /refresh/{job_id}`.
+
+**Option B — Command line:** For an explicitly authorized live run, configure `EIA_API_KEY` in `apps/backend/.env` or the environment. To perform a small **first publication** from the repository root, for example for October 20, 2026, use:
 
 ```sh
 apps/backend/.venv/bin/python -m outage_explorer.refresh_eia \
@@ -183,8 +195,6 @@ apps/backend/.venv/bin/python -m outage_explorer.refresh_eia \
 ```
 
 This example makes live EIA requests, requires a valid key, and is intended only for a small verification window; the API may change or reject requests. Check for `refresh_published` and inspect the audit. Do not assume that a successful request establishes complete source coverage. The runbook describes larger windows, incremental refreshes, and failure recovery.
-
-Alternatively, an Admin can submit `POST /refresh` through the API or the frontend and poll `GET /refresh/{job_id}`. **Supply an initial start date only for the first publication.** Once a snapshot exists, leave the frontend's *Initial start date* empty: subsequent runs derive their start from published watermarks. Supplying `start_date` with an existing snapshot is rejected without changing the published snapshot. An end date equal to the current watermark with zero overlap produces a successful `no_op` without fetching new data.
 
 Refresh jobs run asynchronously inside a **single API worker**; job tracking is lost when that process restarts, although pipeline audits are stored on disk.
 
